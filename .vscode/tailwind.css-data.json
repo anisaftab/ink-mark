@@ -1,0 +1,35 @@
+{
+  "version": 1.1,
+  "atDirectives": [
+    {
+      "name": "@tailwind",
+      "description": "Inserts Tailwind's base, components, utilities or variants styles.",
+      "references": [{ "name": "Tailwind CSS", "url": "https://tailwindcss.com/docs/functions-and-directives#tailwind" }]
+    },
+    {
+      "name": "@apply",
+      "description": "Inlines existing utility classes into your own custom CSS.",
+      "references": [{ "name": "Tailwind CSS", "url": "https://tailwindcss.com/docs/functions-and-directives#apply" }]
+    },
+    {
+      "name": "@layer",
+      "description": "Tells Tailwind which bucket a set of custom styles belong to.",
+      "references": [{ "name": "Tailwind CSS", "url": "https://tailwindcss.com/docs/functions-and-directives#layer" }]
+    },
+    {
+      "name": "@config",
+      "description": "Specifies which config file Tailwind should use when compiling that CSS file.",
+      "references": [{ "name": "Tailwind CSS", "url": "https://tailwindcss.com/docs/functions-and-directives#config" }]
+    },
+    {
+      "name": "@theme",
+      "description": "Defines Tailwind v4 theme variables.",
+      "references": [{ "name": "Tailwind CSS", "url": "https://tailwindcss.com/docs/theme" }]
+    },
+    {
+      "name": "@source",
+      "description": "Explicitly registers a source path for Tailwind v4 content scanning.",
+      "references": [{ "name": "Tailwind CSS", "url": "https://tailwindcss.com/docs/content-configuration" }]
+    }
+  ]
+}

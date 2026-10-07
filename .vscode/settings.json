@@ -1,0 +1,39 @@
+{
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+
+  // ─── Go ─────────────────────────────────────────────────────────────────
+  "[go]": {
+    "editor.defaultFormatter": "golang.go",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    }
+  },
+
+  // ─── Tailwind CSS ────────────────────────────────────────────────────────
+  // Tell Tailwind IntelliSense to treat Svelte files like HTML
+  "tailwindCSS.includeLanguages": {
+    "svelte": "html"
+  },
+  // Enable IntelliSense inside clsx() and cva() utility calls
+  "tailwindCSS.experimental.classRegex": [
+    ["clsx\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"],
+    ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"]
+  ],
+  // Don't scan Go source for Tailwind classes
+  "tailwindCSS.files.exclude": [
+    "**/.git/**",
+    "**/node_modules/**",
+    "**/.hg/**",
+    "**/backend/**"
+  ],
+
+  // ─── TypeScript ──────────────────────────────────────────────────────────
+  "typescript.preferences.tsdk": "frontend/node_modules/typescript/lib",
+
+  // ─── CSS ─────────────────────────────────────────────────────────────────
+  // Suppress "unknown at-rule" warnings for @tailwind, @apply, @layer etc.
+  "css.customData": [".vscode/tailwind.css-data.json"],
+  "scss.customData": [".vscode/tailwind.css-data.json"]
+}

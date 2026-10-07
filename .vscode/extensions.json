@@ -1,0 +1,22 @@
+{
+  "recommendations": [
+    // Go
+    "golang.go",
+    // Svelte / TypeScript / Frontend
+    "svelte.svelte-vscode",
+    "bradlc.vscode-tailwindcss",
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "biomejs.biome",
+    // Database
+    "cweijan.vscode-postgresql-client2",
+    // General DX
+    "eamodio.gitlens",
+    "usernamehw.errorlens",
+    "streetsidesoftware.code-spell-checker",
+    "mikestead.dotenv",
+    "ms-vscode.makefile-tools",
+    "redhat.vscode-yaml",
+    "ms-azuretools.vscode-docker"
+  ]
+}

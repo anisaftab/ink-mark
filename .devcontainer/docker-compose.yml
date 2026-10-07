@@ -1,0 +1,66 @@
+version: "3.9"
+
+services:
+  # ─── Main dev container ───────────────────────────────────────────────────
+  app:
+    container_name: ink-mark
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ..:/workspace/ink-mark:cached
+      - go-cache:/root/go
+      - go-pkg:/go/pkg
+      - node-modules-cache:/workspace/ink-mark/frontend/node_modules
+      - cline-config:/home/vscode/.vscode-server/data/User/globalStorage/saoudrizwan.claude-dev
+    command: sleep infinity
+    environment:
+      - GOPATH=/go
+      - GOMODCACHE=/go/pkg/mod
+      # Postgres
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=inkmark
+      - POSTGRES_PASSWORD=inkmark_dev
+      - POSTGRES_DB=inkmark
+      - DATABASE_URL=postgres://inkmark:inkmark_dev@postgres:5432/inkmark?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - inkmark-net
+
+  # ─── PostgreSQL ───────────────────────────────────────────────────────────
+  postgres:
+    container_name: ink-mark-postgres
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: inkmark
+      POSTGRES_PASSWORD: inkmark_dev
+      POSTGRES_DB: inkmark
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ../db/postgres/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "127.0.0.1:15432:5432" # host:container — inner stays 5432, outer is 15432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U inkmark -d inkmark"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - inkmark-net
+
+# ─── Named volumes ────────────────────────────────────────────────────────
+volumes:
+  postgres-data:
+  go-cache:
+  go-pkg:
+  node-modules-cache:
+  cline-config:
+
+# ─── Networks ─────────────────────────────────────────────────────────────
+networks:
+  inkmark-net:
+    driver: bridge
