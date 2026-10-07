@@ -1,0 +1,23 @@
+# Wails build output
+/build/bin/
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Frontend build output
+/frontend/build/
+/frontend/.svelte-kit/
+/frontend/node_modules/
+
+# Environment — commit .env and .env.dev, exclude local overrides
+*.local
+
+# OS
+.DS_Store
+Thumbs.db
