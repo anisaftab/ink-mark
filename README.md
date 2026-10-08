@@ -1,37 +1,28 @@
 # Ink Mark
 
-A local-first, single-user markdown writing app built with **Go** (backend), **SvelteKit + TypeScript** (frontend), and **PostgreSQL** (everything).
+A local-first, single-user markdown writing app built with **Go + Wails** (desktop backend), **SvelteKit + TypeScript** (frontend), and **Tailwind CSS** (styling).
 
 ---
 
 ## Architecture
 
-``` md
+```md
 ink-mark/
-├── .devcontainer/        # VS Code dev container config
-│   ├── devcontainer.json
-│   ├── docker-compose.yml
-│   ├── Dockerfile
-│   └── post-create.sh
-├── backend/              # Go API server
-├── frontend/             # SvelteKit + TypeScript app
-└── db/
-    └── postgres/
-        └── init/         # SQL files — run automatically on first container start
-            └── 001_schema.sql
+├── .devcontainer/ # VS Code dev container config
+│ ├── devcontainer.json
+│ ├── docker-compose.yml
+│ ├── Dockerfile
+│ └── post-create.sh
+├── frontend/ # SvelteKit + TypeScript + Tailwind app
+│ ├── src/
+│ │ ├── lib/
+│ │ │ └── wailsjs/ # Auto-generated Wails JS bindings (Go → JS bridge)
+│ │ └── routes/ # SvelteKit pages
+│ └── build/ # Compiled frontend (embedded into Go binary)
+├── app.go # Go app struct — bound methods exposed to frontend
+├── main.go # Wails entry point
+└── wails.json # Wails project config
 ```
-
-## Database
-
-**PostgreSQL only.** Single-user, no sync, no multi-user = no need for a second database.
-
-| Table | Purpose |
-|---|---|
-| `notebooks` | Top-level organisational groups |
-| `documents` | Document title + raw markdown content + `tsvector` for full-text search |
-| `tags` / `document_tags` | Tagging system |
-
-Full-text search is handled natively by PostgreSQL via a `tsvector` column and GIN index on `documents`, auto-updated by a trigger on every insert/update.
 
 ---
 
@@ -41,10 +32,27 @@ Full-text search is handled natively by PostgreSQL via a `tsvector` column and G
 2. When prompted, click **"Reopen in Container"**
 3. The `post-create.sh` script will automatically install Go modules and frontend dependencies
 
-### Services
+### Running in dev mode
 
-| Service | URL / Connection |
-|---|---|
-| Frontend (Vite) | http://localhost:13000 |
-| Go API | http://localhost:18080 |
-| PostgreSQL | `localhost:15432` — `inkmark` / `inkmark_dev` / db: `inkmark` |
+```bash
+cd /workspace/ink-mark
+wails dev
+```
+
+### Dev servers
+
+| Service                | URL                    | Description                             |
+| ---------------------- | ---------------------- | --------------------------------------- |
+| **Wails dev server**   | http://localhost:34115 | Full app with Go ↔ JS bridge (use this) |
+| **Vite frontend only** | http://localhost:5173  | UI only, no Go backend calls            |
+
+> **Note:** Always use `http://localhost:34115` during development — it has the full Wails bridge so Go-bound methods (like `Greet()`) work from the browser.
+
+### Building for production
+
+```bash
+cd /workspace/ink-mark
+wails build
+```
+
+The compiled desktop binary will be output to `build/bin/`.
