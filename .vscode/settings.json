@@ -22,15 +22,17 @@
     ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"]
   ],
   // Don't scan Go source for Tailwind classes
-  "tailwindCSS.files.exclude": [
-    "**/.git/**",
-    "**/node_modules/**",
-    "**/.hg/**",
-    "**/backend/**"
-  ],
+  "tailwindCSS.files.exclude": ["**/.git/**", "**/node_modules/**", "**/.hg/**", "**/backend/**"],
 
   // ─── TypeScript ──────────────────────────────────────────────────────────
   "typescript.preferences.tsdk": "frontend/node_modules/typescript/lib",
+  "js/ts.tsserver.experimental.enableProjectDiagnostics": false,
+  "json.schemas": [
+    {
+      "fileMatch": ["wails.json"],
+      "url": "https://wails.io/schemas/config.v2.json"
+    }
+  ],
 
   // ─── CSS ─────────────────────────────────────────────────────────────────
   // Suppress "unknown at-rule" warnings for @tailwind, @apply, @layer etc.
