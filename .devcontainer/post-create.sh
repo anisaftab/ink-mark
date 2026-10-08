@@ -5,23 +5,25 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  Ink Mark — post-create setup"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# ─── Go backend ───────────────────────────────────────────────────────────
-if [ -f "/workspace/ink-mark/backend/go.mod" ]; then
+# ─── Go modules ───────────────────────────────────────────────────────────
+if [ -f "/workspace/ink-mark/go.mod" ]; then
   echo "▶ Downloading Go modules..."
-  cd /workspace/ink-mark/backend && go mod download
+  cd /workspace/ink-mark && go mod download
 fi
 
 # ─── Frontend ─────────────────────────────────────────────────────────────
 if [ -f "/workspace/ink-mark/frontend/package.json" ]; then
   echo "▶ Installing frontend dependencies..."
-  cd /workspace/ink-mark/frontend && pnpm install
+  cd /workspace/ink-mark/frontend && npm install
 fi
 
 echo ""
 echo "✅ Dev environment is ready!"
 echo ""
-echo "  Frontend   → http://localhost:3000  (pnpm dev)"
-echo "  Backend    → http://localhost:8080  (go run ./...)"
-echo "  PostgreSQL → localhost:5432  (inkmark / inkmark_dev)"
+echo "  Run:  cd /workspace/ink-mark && wails dev"
 echo ""
+echo "  Wails dev server  → http://localhost:34115  (full Go bridge)"
+echo "  Vite frontend     → http://localhost:5173   (UI only)"
+echo ""
+
 

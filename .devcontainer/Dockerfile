@@ -14,6 +14,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     unzip \
     sudo \
     bash \
+    pkg-config \
+    libgtk-3-dev \
+    libwebkit2gtk-4.0-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # ─── Non-root user (mirrors the vscode user convention) ───────────────────
@@ -40,7 +43,8 @@ RUN go install golang.org/x/tools/gopls@latest \
     && go install github.com/go-delve/delve/cmd/dlv@latest \
     && go install golang.org/x/tools/cmd/goimports@latest \
     && go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest \
-    && go install gotest.tools/gotestsum@latest
+    && go install gotest.tools/gotestsum@latest \
+    && go install github.com/wailsapp/wails/v2/cmd/wails@latest
 
 # ─── Node.js (via nvm) ────────────────────────────────────────────────────
 ARG NODE_VERSION=22
