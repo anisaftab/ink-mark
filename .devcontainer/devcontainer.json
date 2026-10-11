@@ -42,12 +42,12 @@
 
   "forwardPorts": [
     34115, // Wails dev server      (Go bridge + frontend)
-    5173   // Vite frontend only    (no Go calls)
+    5173 // Vite frontend only    (no Go calls)
   ],
 
   "portsAttributes": {
     "34115": { "label": "Wails Dev Server", "onAutoForward": "openBrowser", "host": "127.0.0.1" },
-    "5173":  { "label": "Vite Frontend", "host": "127.0.0.1" }
+    "5173": { "label": "Vite Frontend", "host": "127.0.0.1" }
   },
 
   "postCreateCommand": "bash .devcontainer/post-create.sh",
