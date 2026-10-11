@@ -65,9 +65,9 @@ All colors are CSS custom properties defined in a single `:root` block. **Never 
   --color-ink-subtle:     #A8A29E; /* stone-400 — placeholders, disabled      */
 
   /* ── Translucency ───────────────────────────────────────── */
-  --glass-sidebar-bg:     rgba(247, 246, 243, 0.40);
+  --glass-sidebar-bg:     rgba(247, 246, 243, 0.99);
   --glass-sidebar-blur:   blur(48px) saturate(160%);
-  --glass-content-bg:     rgba(253, 252, 250, 0.82);
+  --glass-content-bg:     rgba(253, 252, 250, 0.99);
   --glass-content-blur:   blur(24px);
 
   /* ── Borders ─────────────────────────────────────────────── */
