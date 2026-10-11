@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     pkg-config \
     libgtk-3-dev \
     libwebkit2gtk-4.0-dev \
+    mingw-w64 \
     && rm -rf /var/lib/apt/lists/*
 
 # ─── Non-root user (mirrors the vscode user convention) ───────────────────
