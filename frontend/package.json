@@ -39,5 +39,9 @@
 	"imports": {
 		"#lib": "./src/lib/index.js",
 		"#lib/*": "./src/lib/*"
+	},
+	"dependencies": {
+		"@phosphor-icons/web": "^2.1.2",
+		"prosekit": "^0.22.4"
 	}
 }
