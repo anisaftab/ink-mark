@@ -1,3 +1,16 @@
 @import 'tailwindcss';
+@import '@phosphor-icons/web/duotone';
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: #F3F3F3;
+}
+
+body { -webkit-font-smoothing: antialiased; }
+
