@@ -1,35 +1,25 @@
 -- +goose Up
-create extension if not exists "pgcrypto";
-
 create table documents (
-    id          uuid        primary key default gen_random_uuid(),
-    title       text        not null default 'Untitled',
-    content     jsonb       not null default '{}',
-    content_fts tsvector    generated always as (
-                                to_tsvector('english', coalesce(title, ''))
-                            ) stored,
-    created_at  timestamptz not null default now(),
-    updated_at  timestamptz not null default now()
+    id         text     primary key,
+    title      text     not null default 'Untitled',
+    file_path  text     not null,
+    created_at datetime not null default (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    updated_at datetime not null default (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
-create index documents_content_fts_idx on documents using gin(content_fts);
-create index documents_updated_at_idx  on documents(updated_at desc);
+create index documents_updated_at_idx on documents(updated_at desc);
 
 -- +goose StatementBegin
-create or replace function set_updated_at()
-returns trigger language plpgsql as $$
+create trigger documents_set_updated_at
+    after update on documents
+    for each row
+    when old.title != new.title or old.file_path != new.file_path
 begin
-    new.updated_at = now();
-    return new;
+    update documents set updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+    where id = new.id;
 end;
-$$;
 -- +goose StatementEnd
 
-create trigger documents_set_updated_at
-    before update on documents
-    for each row execute function set_updated_at();
-
 -- +goose Down
-drop trigger if exists documents_set_updated_at on documents;
-drop function if exists set_updated_at();
+drop trigger if exists documents_set_updated_at;
 drop table if exists documents;

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import './layout.css';
 	import favicon from '#lib/assets/favicon.svg';
+	import { newDocumentTrigger } from '#lib/stores';
 	import type { LayoutProps } from './$types';
 
 	let { children }: LayoutProps = $props();
@@ -20,7 +21,8 @@
 			</div>
 
 			<nav class="nav">
-				<button class="nav-item nav-item--active" type="button">
+				<button class="nav-item nav-item--active" type="button"
+					onclick={() => newDocumentTrigger.update(n => n + 1)}>
 					<i class="ph-duotone ph-note-pencil nav-icon"></i>
 					<span>New Document</span>
 				</button>

@@ -21,6 +21,11 @@
 /frontend/.svelte-kit/
 /frontend/node_modules/
 
+# SQLite database files
+*.db
+*.db-shm
+*.db-wal
+
 # Environment — commit .env and .env.dev, exclude local overrides
 *.local
 

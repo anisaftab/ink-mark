@@ -1,0 +1,29 @@
+package main
+
+import (
+	"fmt"
+
+	"github.com/pressly/goose/v3"
+	"gorm.io/gorm"
+)
+
+// runMigrations applies all pending goose migrations against the given DB.
+func runMigrations(gormDB *gorm.DB) error {
+	sqlDB, err := gormDB.DB()
+	if err != nil {
+		return fmt.Errorf("get sql.DB: %w", err)
+	}
+
+	goose.SetBaseFS(nil)
+	goose.SetLogger(goose.NopLogger())
+
+	if err := goose.SetDialect("sqlite3"); err != nil {
+		return fmt.Errorf("set dialect: %w", err)
+	}
+
+	if err := goose.Up(sqlDB, "db/migrations"); err != nil {
+		return fmt.Errorf("run migrations: %w", err)
+	}
+
+	return nil
+}

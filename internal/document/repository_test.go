@@ -2,7 +2,6 @@ package document_test
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
 	internaldb "ink-mark/internal/db"
@@ -16,49 +15,26 @@ import (
 
 const migrationsPath = "../../db/migrations"
 
-// setupTestSchema creates an isolated Postgres schema named schemaName, runs all
-// migrations inside it, and registers a cleanup that drops it — even on failure.
-func setupTestSchema(t *testing.T, schemaName string) *gorm.DB {
+// setupTestDB opens an isolated in-memory SQLite database and runs all migrations.
+// No cleanup needed — the database evaporates when the test ends.
+func setupTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 
-	// Use a plain connection to manage the schema lifecycle.
-	rootDB, err := internaldb.Open()
-	require.NoError(t, err, "open root database connection")
-
-	// Drop any stale schema from a previous crashed run, then recreate clean.
-	require.NoError(t,
-		rootDB.Exec("DROP SCHEMA IF EXISTS "+schemaName+" CASCADE").Error,
-		"drop stale schema",
-	)
-	require.NoError(t,
-		rootDB.Exec("CREATE SCHEMA "+schemaName).Error,
-		"create test schema",
-	)
-
-	// Always drop on exit — even on failure or panic.
-	t.Cleanup(func() {
-		_ = rootDB.Exec("DROP SCHEMA IF EXISTS " + schemaName + " CASCADE").Error
-	})
-
-	// Open a schema-scoped connection — search_path baked into DSN, no pool leakage.
-	gormDB, err := internaldb.OpenWithSchema(schemaName)
-	require.NoError(t, err, "open schema-scoped connection")
+	gormDB, err := internaldb.OpenMemory()
+	require.NoError(t, err, "open in-memory database")
 
 	sqlDB, err := gormDB.DB()
 	require.NoError(t, err, "get underlying sql.DB")
 
-	// Use a schema-specific goose version table so each schema tracks its own
-	// migration state independently — otherwise goose sees the public schema's
-	// version table and skips migrations entirely.
-	goose.SetTableName(schemaName + ".goose_db_version")
 	goose.SetLogger(goose.NopLogger())
+	require.NoError(t, goose.SetDialect("sqlite3"), "set dialect")
 	require.NoError(t, goose.Up(sqlDB, migrationsPath), "run migrations")
 
 	return gormDB
 }
 
 func TestRepository_Create(t *testing.T) {
-	db := setupTestSchema(t, "test_repo_create")
+	db := setupTestDB(t)
 	repo := document.NewRepository(db)
 	ctx := context.Background()
 
@@ -69,11 +45,11 @@ func TestRepository_Create(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:  "success — title and content provided",
-			input: document.Input{Title: "My Note", Content: json.RawMessage(`{"type":"doc"}`)},
+			name:  "success — title and file path provided",
+			input: document.Input{Title: "My Note", FilePath: "/docs/my-note.md"},
 			want: func(t *testing.T, doc document.Document) {
 				assert.Equal(t, "My Note", doc.Title)
-				assert.JSONEq(t, `{"type":"doc"}`, string(doc.Content))
+				assert.Equal(t, "/docs/my-note.md", doc.FilePath)
 				assert.NotEmpty(t, doc.ID)
 				assert.False(t, doc.CreatedAt.IsZero())
 				assert.False(t, doc.UpdatedAt.IsZero())
@@ -81,17 +57,15 @@ func TestRepository_Create(t *testing.T) {
 		},
 		{
 			name:  "success — empty title defaults to Untitled",
-			input: document.Input{Title: "", Content: json.RawMessage(`{}`)},
+			input: document.Input{Title: "", FilePath: "/docs/untitled.md"},
 			want: func(t *testing.T, doc document.Document) {
 				assert.Equal(t, "Untitled", doc.Title)
 			},
 		},
 		{
-			name:  "success — nil content defaults to {}",
-			input: document.Input{Title: "Note", Content: nil},
-			want: func(t *testing.T, doc document.Document) {
-				assert.JSONEq(t, `{}`, string(doc.Content))
-			},
+			name:    "failure — empty file path",
+			input:   document.Input{Title: "Note", FilePath: ""},
+			wantErr: true,
 		},
 	}
 
@@ -109,11 +83,11 @@ func TestRepository_Create(t *testing.T) {
 }
 
 func TestRepository_GetByID(t *testing.T) {
-	db := setupTestSchema(t, "test_repo_getbyid")
+	db := setupTestDB(t)
 	repo := document.NewRepository(db)
 	ctx := context.Background()
 
-	created, err := repo.Create(ctx, document.Input{Title: "Find Me", Content: json.RawMessage(`{}`)})
+	created, err := repo.Create(ctx, document.Input{Title: "Find Me", FilePath: "/docs/find-me.md"})
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -156,11 +130,11 @@ func TestRepository_GetByID(t *testing.T) {
 }
 
 func TestRepository_GetByTitle(t *testing.T) {
-	db := setupTestSchema(t, "test_repo_getbytitle")
+	db := setupTestDB(t)
 	repo := document.NewRepository(db)
 	ctx := context.Background()
 
-	_, err := repo.Create(ctx, document.Input{Title: "Meeting Notes", Content: json.RawMessage(`{}`)})
+	_, err := repo.Create(ctx, document.Input{Title: "Meeting Notes", FilePath: "/docs/meeting-notes.md"})
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -210,7 +184,7 @@ func TestRepository_GetByTitle(t *testing.T) {
 
 func TestRepository_List(t *testing.T) {
 	t.Run("success — empty list", func(t *testing.T) {
-		db := setupTestSchema(t, "test_repo_list_empty")
+		db := setupTestDB(t)
 		repo := document.NewRepository(db)
 		ctx := context.Background()
 
@@ -220,13 +194,13 @@ func TestRepository_List(t *testing.T) {
 	})
 
 	t.Run("success — returns all documents ordered by updated_at desc", func(t *testing.T) {
-		db := setupTestSchema(t, "test_repo_list_ordered")
+		db := setupTestDB(t)
 		repo := document.NewRepository(db)
 		ctx := context.Background()
 
-		_, err := repo.Create(ctx, document.Input{Title: "First", Content: json.RawMessage(`{}`)})
+		_, err := repo.Create(ctx, document.Input{Title: "First", FilePath: "/docs/first.md"})
 		require.NoError(t, err)
-		_, err = repo.Create(ctx, document.Input{Title: "Second", Content: json.RawMessage(`{}`)})
+		_, err = repo.Create(ctx, document.Input{Title: "Second", FilePath: "/docs/second.md"})
 		require.NoError(t, err)
 
 		docs, err := repo.List(ctx)
@@ -239,11 +213,11 @@ func TestRepository_List(t *testing.T) {
 
 
 func TestRepository_Update(t *testing.T) {
-	db := setupTestSchema(t, "test_repo_update")
+	db := setupTestDB(t)
 	repo := document.NewRepository(db)
 	ctx := context.Background()
 
-	created, err := repo.Create(ctx, document.Input{Title: "Original", Content: json.RawMessage(`{"v":1}`)})
+	created, err := repo.Create(ctx, document.Input{Title: "Original", FilePath: "/docs/original.md"})
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -259,15 +233,15 @@ func TestRepository_Update(t *testing.T) {
 			input: document.Input{Title: "Updated Title"},
 			want: func(t *testing.T, doc document.Document) {
 				assert.Equal(t, "Updated Title", doc.Title)
-				assert.JSONEq(t, `{"v":1}`, string(doc.Content))
+				assert.Equal(t, "/docs/original.md", doc.FilePath)
 			},
 		},
 		{
-			name:  "success — update content only",
+			name:  "success — update file path only",
 			id:    created.ID,
-			input: document.Input{Content: json.RawMessage(`{"v":2}`)},
+			input: document.Input{FilePath: "/docs/renamed.md"},
 			want: func(t *testing.T, doc document.Document) {
-				assert.JSONEq(t, `{"v":2}`, string(doc.Content))
+				assert.Equal(t, "/docs/renamed.md", doc.FilePath)
 			},
 		},
 		{
@@ -300,12 +274,12 @@ func TestRepository_Update(t *testing.T) {
 }
 
 func TestRepository_Delete(t *testing.T) {
-	db := setupTestSchema(t, "test_repo_delete")
+	db := setupTestDB(t)
 	repo := document.NewRepository(db)
 	ctx := context.Background()
 
 	t.Run("success — document is deleted and no longer found", func(t *testing.T) {
-		doc, err := repo.Create(ctx, document.Input{Title: "Delete Me", Content: json.RawMessage(`{}`)})
+		doc, err := repo.Create(ctx, document.Input{Title: "Delete Me", FilePath: "/docs/delete-me.md"})
 		require.NoError(t, err)
 
 		require.NoError(t, repo.Delete(ctx, doc.ID))
@@ -320,7 +294,7 @@ func TestRepository_Delete(t *testing.T) {
 	})
 
 	t.Run("failure — deleting an already deleted document", func(t *testing.T) {
-		doc, err := repo.Create(ctx, document.Input{Title: "Double Delete", Content: json.RawMessage(`{}`)})
+		doc, err := repo.Create(ctx, document.Input{Title: "Double Delete", FilePath: "/docs/double-delete.md"})
 		require.NoError(t, err)
 
 		require.NoError(t, repo.Delete(ctx, doc.ID))

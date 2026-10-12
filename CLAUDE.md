@@ -7,8 +7,10 @@
 - **Runtime**: Wails v2 — Go + SvelteKit rendered in a native webview
 - **Frontend**: SvelteKit + TypeScript (`frontend/`)
 - **Backend**: Go (`main.go`, `app.go`)
+- **Database**: SQLite (`ink-mark.db` — lives next to the binary, auto-created on first run)
+- **Content**: Markdown files on disk — the DB stores metadata and file paths only
 
-No server, no database, no sync, no multi-user.
+No server, no sync, no multi-user.
 
 ---
 
