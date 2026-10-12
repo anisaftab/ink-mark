@@ -1,8 +1,13 @@
 # Wails build output
-/build/bin/
+/build/bin/releases/
+/build/bin/ab/
+/build/bin/tmp/
+/build/bin/ink-mark-dev-linux-amd64
+
+# Keep the versioned main exe tracked
+!/build/bin/ink-mark.exe
 
 # Go
-*.exe
 *.exe~
 *.dll
 *.so

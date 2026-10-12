@@ -9,6 +9,10 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/windows"
 )
 
+// Version is injected at build time via -ldflags "-X main.Version=x.y.z".
+// Falls back to "dev" when built without the flag.
+var Version = "dev"
+
 //go:embed all:frontend/build
 var assets embed.FS
 
