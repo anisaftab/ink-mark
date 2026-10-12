@@ -48,11 +48,16 @@ wails dev
 
 > **Note:** Always use `http://localhost:34115` during development — it has the full Wails bridge so Go-bound methods (like `Greet()`) work from the browser.
 
-### Building for production
+### Building for Windows
+
+Use `make` — it handles versioning, output, and archiving automatically.
 
 ```bash
 cd /workspace/ink-mark
-wails build
+make release        # bump patch, build, overwrite build/bin/ink-mark.exe
+make release-minor  # bump minor version
+make release-major  # bump major version
+make build-ab NAME=b  # side-by-side test build — does NOT overwrite the main exe
 ```
 
-The compiled desktop binary will be output to `build/bin/`.
+See the `Makefile` for full details.
