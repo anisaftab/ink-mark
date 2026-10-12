@@ -101,15 +101,39 @@ func TestCreateDocument(t *testing.T) {
 
 Use **`testify`** (`github.com/stretchr/testify`) — `assert` for non-fatal, `require` for fatal assertions.
 
-For database tests, use a **real test database** — not mocks for the repository layer. Spin up a transaction per test and roll it back at the end, so tests are isolated and leave no state:
+For database tests, use the **real Postgres instance** already running in the devcontainer — no mocks, no SQLite, no extra containers.
+
+**Isolation strategy — dedicated schema per test suite:**
+
+Each test suite (e.g. `document/repository`, `document/service`) creates its own Postgres schema, runs the full goose migrations inside it, executes all tests, then drops the schema — always, even if tests fail or panic.
+
+- Schema name matches the package under test: `test_document_repository`, `test_document_service`, etc.
+- Always include `public` in `search_path` so Postgres extension functions (`gen_random_uuid()`, etc.) resolve correctly: `SET search_path TO test_document_repository, public`
+- Use `t.Cleanup()` for the drop — it fires after the test even on panic or failure.
+- Goose migrations run per schema — the `goose_db_version` table is also contained inside the test schema.
 
 ```go
-func withTestTx(t *testing.T, db *sql.DB, fn func(tx *sql.Tx)) {
+func setupTestSchema(t *testing.T, schemaName string) *gorm.DB {
     t.Helper()
-    tx, err := db.Begin()
+
+    db, err := db.Open() // uses DATABASE_URL
     require.NoError(t, err)
-    t.Cleanup(func() { _ = tx.Rollback() })
-    fn(tx)
+
+    // create schema and set search path
+    require.NoError(t, db.Exec("CREATE SCHEMA IF NOT EXISTS "+schemaName).Error)
+    require.NoError(t, db.Exec("SET search_path TO "+schemaName+", public").Error)
+
+    // run migrations inside the schema
+    sqlDB, err := db.DB()
+    require.NoError(t, err)
+    require.NoError(t, goose.Up(sqlDB, "../../db/migrations"))
+
+    // always drop on exit, even on failure
+    t.Cleanup(func() {
+        db.Exec("DROP SCHEMA IF EXISTS " + schemaName + " CASCADE")
+    })
+
+    return db
 }
 ```
 
