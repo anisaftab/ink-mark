@@ -24,6 +24,123 @@ No server, no database, no sync, no multi-user.
 - **Follow SOLID principles.** Apply them where they genuinely improve the design, not as dogma.
 - **Advice mode.** When the user asks for advice, provide advice only — no code changes.
 
+### Go — Test-Driven Development
+
+All Go code is written test-first. No production Go code without a corresponding test. This applies to every layer — repository, service, handler, utility.
+
+#### TDD cycle
+
+1. Write the test first — it must fail (red).
+2. Write the minimum production code to make it pass (green).
+3. Refactor. Keep tests passing.
+
+Never write production code speculatively. If there is no test demanding the behaviour, the code should not exist.
+
+#### What must be tested
+
+Every testable behaviour needs a test. When writing or reviewing Go code, ask: *what can go wrong here, and what must go right?* Cover all of it.
+
+**Success paths:**
+- The happy path — expected input, expected output.
+- Every distinct valid variant (e.g. different valid inputs that produce different valid outputs).
+- Boundary values at the edges of valid ranges.
+
+**Failure paths — every single one:**
+- Invalid input (empty strings, zero values, nil, malformed data).
+- Out-of-range values.
+- Not-found cases (record does not exist).
+- Duplicate / constraint violation (unique key, FK).
+- Database errors (connection failure, query error — use mocks or test doubles).
+- Partial failure (some records succeed, one fails).
+- Context cancellation and timeout.
+- Unexpected data types or shapes in `jsonb` columns.
+
+**State and side effects:**
+- Verify the database state after a write (insert/update/delete) by reading it back.
+- Verify `updated_at` is actually updated on mutations.
+- Verify triggers fire as expected.
+- Verify indexes are used where performance depends on them (use `EXPLAIN` in integration tests where relevant).
+
+#### Test structure
+
+Use **table-driven tests** for all cases with multiple inputs. Each case must have a descriptive name.
+
+```go
+func TestCreateDocument(t *testing.T) {
+    tests := []struct {
+        name    string
+        input   CreateDocumentInput
+        wantErr bool
+        errType error // nil if not checking specific error
+    }{
+        {
+            name:  "success — valid title and content",
+            input: CreateDocumentInput{Title: "My Note", Content: `{}`},
+        },
+        {
+            name:    "failure — empty title",
+            input:   CreateDocumentInput{Title: "", Content: `{}`},
+            wantErr: true,
+        },
+        {
+            name:    "failure — invalid json content",
+            input:   CreateDocumentInput{Title: "Note", Content: `not-json`},
+            wantErr: true,
+        },
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            // arrange, act, assert
+        })
+    }
+}
+```
+
+#### Testing with the database
+
+Use **`testify`** (`github.com/stretchr/testify`) — `assert` for non-fatal, `require` for fatal assertions.
+
+For database tests, use a **real test database** — not mocks for the repository layer. Spin up a transaction per test and roll it back at the end, so tests are isolated and leave no state:
+
+```go
+func withTestTx(t *testing.T, db *sql.DB, fn func(tx *sql.Tx)) {
+    t.Helper()
+    tx, err := db.Begin()
+    require.NoError(t, err)
+    t.Cleanup(func() { _ = tx.Rollback() })
+    fn(tx)
+}
+```
+
+Mock at the **service layer** when testing business logic that depends on a repository interface — never mock the database itself at the repository layer.
+
+#### Test file conventions
+
+- Test files live next to the code they test: `document_repo_test.go` alongside `document_repo.go`.
+- Integration tests that require a database are in `_integration_test.go` files and guarded with a build tag or `testing.Short()` skip:
+
+```go
+func TestDocumentRepo_Integration(t *testing.T) {
+    if testing.Short() {
+        t.Skip("skipping integration test")
+    }
+    // ...
+}
+```
+
+- Run unit tests only: `go test -short ./...`
+- Run all tests including integration: `go test ./...`
+
+#### Assertions checklist per test
+
+Every test must assert:
+- [ ] The returned value is correct (or error is nil on success).
+- [ ] The returned error is non-nil on failure paths.
+- [ ] The error message or type is what is expected (where meaningful).
+- [ ] Any side effects (DB state, timestamps, derived fields) are verified.
+- [ ] No unexpected rows were created/modified/deleted.
+
 ### Languages
 
 - **Go**: Strongly typed. Use explicit types, avoid `interface{}` / `any` unless truly necessary.
@@ -56,23 +173,23 @@ All colors are CSS custom properties defined in a single `:root` block. **Never 
 ```css
 :root {
   /* ── Surfaces ────────────────────────────────────────────── */
-  --color-base:           #F7F6F3; /* warm paper-white — main app background  */
-  --color-surface:        #FDFCFA; /* slightly lighter — panels, cards        */
+  --color-base: #f7f6f3; /* warm paper-white — main app background  */
+  --color-surface: #fdfcfa; /* slightly lighter — panels, cards        */
 
   /* ── Ink (text & strokes) ───────────────────────────────── */
-  --color-ink:            #1C1917; /* warm near-black — primary text          */
-  --color-ink-muted:      #57534E; /* stone-600 — secondary text, labels      */
-  --color-ink-subtle:     #A8A29E; /* stone-400 — placeholders, disabled      */
+  --color-ink: #1c1917; /* warm near-black — primary text          */
+  --color-ink-muted: #57534e; /* stone-600 — secondary text, labels      */
+  --color-ink-subtle: #a8a29e; /* stone-400 — placeholders, disabled      */
 
   /* ── Translucency ───────────────────────────────────────── */
-  --glass-sidebar-bg:     rgba(247, 246, 243, 0.99);
-  --glass-sidebar-blur:   blur(48px) saturate(160%);
-  --glass-content-bg:     rgba(253, 252, 250, 0.99);
-  --glass-content-blur:   blur(24px);
+  --glass-sidebar-bg: rgba(247, 246, 243, 0.99);
+  --glass-sidebar-blur: blur(48px) saturate(160%);
+  --glass-content-bg: rgba(253, 252, 250, 0.99);
+  --glass-content-blur: blur(24px);
 
   /* ── Borders ─────────────────────────────────────────────── */
-  --color-border:         rgba(28, 25, 23, 0.08);
-  --color-border-strong:  rgba(28, 25, 23, 0.16);
+  --color-border: rgba(28, 25, 23, 0.08);
+  --color-border-strong: rgba(28, 25, 23, 0.16);
 }
 ```
 
@@ -80,9 +197,9 @@ All colors are CSS custom properties defined in a single `:root` block. **Never 
 
 The app window background is transparent (Wails `BackgroundColour: A: 0`) so the desktop wallpaper bleeds through both layers.
 
-| Layer | Intent | CSS |
-|---|---|---|
-| **Sidebar** | Mica-like — wallpaper reflects strongly | `background: var(--glass-sidebar-bg); backdrop-filter: var(--glass-sidebar-blur);` |
+| Layer       | Intent                                       | CSS                                                                                |
+| ----------- | -------------------------------------------- | ---------------------------------------------------------------------------------- |
+| **Sidebar** | Mica-like — wallpaper reflects strongly      | `background: var(--glass-sidebar-bg); backdrop-filter: var(--glass-sidebar-blur);` |
 | **Content** | Readable glass — document text must be crisp | `background: var(--glass-content-bg); backdrop-filter: var(--glass-content-blur);` |
 
 - Never use plain `background: white` or `background: var(--color-surface)` on any visible panel — always layer through the glass tokens.
@@ -98,11 +215,11 @@ The app window background is transparent (Wails `BackgroundColour: A: 0`) so the
 
 ```css
 :root {
-  --font-sans:            'Plus Jakarta Sans', system-ui, sans-serif;
-  --font-weight-normal:   400;
-  --font-weight-medium:   500;
+  --font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
   --font-weight-semibold: 600;
-  --font-weight-bold:     700;
+  --font-weight-bold: 700;
 }
 
 body {
@@ -142,9 +259,9 @@ Any UI element that can be selected, active, or focused must be **visually unamb
 
 ```css
 :root {
-  --color-accent:         #C2410C; /* warm amber-red — primary active/selected */
-  --color-accent-subtle:  rgba(194, 65, 12, 0.10); /* tinted background fill   */
-  --color-focus-ring:     rgba(194, 65, 12, 0.50); /* keyboard focus outline    */
+  --color-accent: #c2410c; /* warm amber-red — primary active/selected */
+  --color-accent-subtle: rgba(194, 65, 12, 0.1); /* tinted background fill   */
+  --color-focus-ring: rgba(194, 65, 12, 0.5); /* keyboard focus outline    */
 }
 ```
 
@@ -159,21 +276,22 @@ All motion follows a single consistent timing system. **Never use arbitrary dura
 ```css
 :root {
   /* ── Timing scale ────────────────────────────────────────── */
-  --duration-instant:  80ms;   /* state toggles, checkboxes             */
-  --duration-fast:     150ms;  /* hover, focus, button press            */
-  --duration-base:     250ms;  /* panel reveals, dropdown open          */
-  --duration-slow:     400ms;  /* page transitions, modal enter         */
-  --duration-lazy:     600ms;  /* large layout shifts, onboarding       */
+  --duration-instant: 80ms; /* state toggles, checkboxes             */
+  --duration-fast: 150ms; /* hover, focus, button press            */
+  --duration-base: 250ms; /* panel reveals, dropdown open          */
+  --duration-slow: 400ms; /* page transitions, modal enter         */
+  --duration-lazy: 600ms; /* large layout shifts, onboarding       */
 
   /* ── Easing ──────────────────────────────────────────────── */
-  --ease-out:    cubic-bezier(0.0, 0.0, 0.2, 1); /* decelerate — entering elements  */
-  --ease-in:     cubic-bezier(0.4, 0.0, 1.0, 1); /* accelerate — leaving elements   */
+  --ease-out: cubic-bezier(0, 0, 0.2, 1); /* decelerate — entering elements  */
+  --ease-in: cubic-bezier(0.4, 0, 1, 1); /* accelerate — leaving elements   */
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1); /* slight overshoot — feel alive */
-  --ease-smooth: cubic-bezier(0.4, 0.0, 0.2, 1); /* standard — state changes        */
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1); /* standard — state changes        */
 }
 ```
 
 **Rules:**
+
 - Hover/focus transitions: `--duration-fast` + `--ease-smooth`.
 - Elements entering the screen: `--duration-base` + `--ease-out`.
 - Elements leaving the screen: `--duration-fast` + `--ease-in` (exits are always faster than entrances).
@@ -183,18 +301,18 @@ All motion follows a single consistent timing system. **Never use arbitrary dura
 
 **Micro-interaction catalogue** — apply these consistently everywhere:
 
-| Interaction | Animation |
-|---|---|
-| Button press | `transform: scale(0.97)` on `:active`, `--duration-instant`, `--ease-spring` |
-| Nav item hover | Background fade, icon nudge `translateX(2px)`, `--duration-fast` |
-| Nav item active | Left border slides in, background fills, `--duration-base` + `--ease-out` |
-| Sidebar item click | Brief scale pulse on icon `scale(1.15 → 1)`, `--duration-fast` + `--ease-spring` |
-| Panel/modal enter | `opacity: 0 → 1` + `translateY(6px) → 0`, `--duration-base` + `--ease-out` |
-| Panel/modal exit | `opacity: 1 → 0` + `translateY(4px)`, `--duration-fast` + `--ease-in` |
+| Interaction          | Animation                                                                        |
+| -------------------- | -------------------------------------------------------------------------------- |
+| Button press         | `transform: scale(0.97)` on `:active`, `--duration-instant`, `--ease-spring`     |
+| Nav item hover       | Background fade, icon nudge `translateX(2px)`, `--duration-fast`                 |
+| Nav item active      | Left border slides in, background fills, `--duration-base` + `--ease-out`        |
+| Sidebar item click   | Brief scale pulse on icon `scale(1.15 → 1)`, `--duration-fast` + `--ease-spring` |
+| Panel/modal enter    | `opacity: 0 → 1` + `translateY(6px) → 0`, `--duration-base` + `--ease-out`       |
+| Panel/modal exit     | `opacity: 1 → 0` + `translateY(4px)`, `--duration-fast` + `--ease-in`            |
 | Toast / notification | Slide in from bottom `translateY(16px) → 0`, `--duration-base` + `--ease-spring` |
-| Input focus | Border colour transition + subtle shadow grow, `--duration-fast` |
-| Checkbox / toggle | Fill sweep or thumb slide, `--duration-base` + `--ease-spring` |
-| Icon in active state | Duotone layer brightens, `--duration-fast` |
+| Input focus          | Border colour transition + subtle shadow grow, `--duration-fast`                 |
+| Checkbox / toggle    | Fill sweep or thumb slide, `--duration-base` + `--ease-spring`                   |
+| Icon in active state | Duotone layer brightens, `--duration-fast`                                       |
 
 ---
 
@@ -204,12 +322,12 @@ All motion follows a single consistent timing system. **Never use arbitrary dura
 
 ### Go — `samber/cc-skills-golang` ✅ All audits pass
 
-| Skill | Purpose |
-|---|---|
-| `golang-code-style` | Style rules, line length, clarity over cleverness |
-| `golang-error-handling` | Idiomatic Go error wrapping and propagation |
-| `golang-database` | Database access patterns for Go |
-| `golang-testing` | Table-driven tests, testify, coverage |
+| Skill                   | Purpose                                           |
+| ----------------------- | ------------------------------------------------- |
+| `golang-code-style`     | Style rules, line length, clarity over cleverness |
+| `golang-error-handling` | Idiomatic Go error wrapping and propagation       |
+| `golang-database`       | Database access patterns for Go                   |
+| `golang-testing`        | Table-driven tests, testify, TDD patterns, coverage |
 
 ```sh
 npx skills add samber/cc-skills-golang --skill golang-code-style
@@ -220,10 +338,10 @@ npx skills add samber/cc-skills-golang --skill golang-testing
 
 ### Svelte / SvelteKit — `sveltejs/ai-tools` ✅ All audits pass (Official Svelte team)
 
-| Skill | Purpose |
-|---|---|
-| `svelte-code-writer` | Writing correct Svelte 5 components with MCP doc access |
-| `svelte-core-bestpractices` | `$state`, `$derived`, `$effect` runes best practices |
+| Skill                       | Purpose                                                 |
+| --------------------------- | ------------------------------------------------------- |
+| `svelte-code-writer`        | Writing correct Svelte 5 components with MCP doc access |
+| `svelte-core-bestpractices` | `$state`, `$derived`, `$effect` runes best practices    |
 
 ```sh
 npx skills add sveltejs/ai-tools --skill svelte-code-writer
@@ -232,8 +350,8 @@ npx skills add sveltejs/ai-tools --skill svelte-core-bestpractices
 
 ### Svelte 5 — `ejirocodes/agent-skills` ✅ All audits pass
 
-| Skill | Purpose |
-|---|---|
+| Skill                    | Purpose                                                     |
+| ------------------------ | ----------------------------------------------------------- |
 | `svelte5-best-practices` | Runes, snippets, TypeScript props, SvelteKit load functions |
 
 ```sh
@@ -242,8 +360,8 @@ npx skills add ejirocodes/agent-skills --skill svelte5-best-practices
 
 ### TypeScript — `wshobson/agents` ✅ All audits pass
 
-| Skill | Purpose |
-|---|---|
+| Skill                       | Purpose                                                  |
+| --------------------------- | -------------------------------------------------------- |
 | `typescript-advanced-types` | Generics, conditional types, mapped types, strict typing |
 
 ```sh
@@ -252,8 +370,8 @@ npx skills add wshobson/agents --skill typescript-advanced-types
 
 ### Git — `github/awesome-copilot` ✅ All audits pass
 
-| Skill | Purpose |
-|---|---|
+| Skill        | Purpose                                                      |
+| ------------ | ------------------------------------------------------------ |
 | `git-commit` | Conventional Commits: feat, fix, chore, docs, refactor, etc. |
 
 ```sh
