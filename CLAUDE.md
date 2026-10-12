@@ -26,15 +26,15 @@ No server, no database, no sync, no multi-user.
 
 ### Go — Test-Driven Development
 
-All Go code is written test-first. No production Go code without a corresponding test. This applies to every layer — repository, service, handler, utility.
+All Go code follows a test-driven workflow. This applies to every layer — repository, service, handler, utility.
 
-#### TDD cycle
+#### Development cycle
 
-1. Write the test first — it must fail (red).
-2. Write the minimum production code to make it pass (green).
-3. Refactor. Keep tests passing.
+1. Write the production code first.
+2. Get explicit approval from the user.
+3. Only then write the tests.
 
-Never write production code speculatively. If there is no test demanding the behaviour, the code should not exist.
+Never write tests for unapproved code. Never write production code and tests in the same step.
 
 #### What must be tested
 
