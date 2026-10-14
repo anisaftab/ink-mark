@@ -6,6 +6,10 @@ export function LoadDocument(arg1) {
   return window['go']['main']['App']['LoadDocument'](arg1);
 }
 
+export function LogBrowserEvent(arg1, arg2, arg3) {
+  return window['go']['main']['App']['LogBrowserEvent'](arg1, arg2, arg3);
+}
+
 export function NewDocument() {
   return window['go']['main']['App']['NewDocument']();
 }

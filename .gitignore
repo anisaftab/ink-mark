@@ -1,11 +1,5 @@
-# Wails build output
-/build/bin/releases/
-/build/bin/ab/
-/build/bin/tmp/
-/build/bin/ink-mark-dev-linux-amd64
-
-# Keep the versioned main exe tracked
-!/build/bin/ink-mark.exe
+# Wails build output — ignore all binaries
+/build/bin/
 
 # Go
 *.exe~
@@ -29,6 +23,10 @@
 # Environment — commit .env and .env.dev, exclude local overrides
 *.local
 
+# Agent dev-loop logs — local only, never committed
+/logs/
+
 # OS
 .DS_Store
 Thumbs.db
+

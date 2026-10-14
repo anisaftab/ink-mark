@@ -2,6 +2,11 @@ package main
 
 import (
 	"embed"
+	"io"
+	"log"
+	"os"
+
+	"ink-mark/internal/logging"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -17,6 +22,14 @@ var Version = "dev"
 var assets embed.FS
 
 func main() {
+	// When INKMARK_DEV_LOGS=1, tee all Go log output to logs/go.log so
+	// agents can read it without watching a terminal.
+	if f := logging.OpenLogFile("go"); f != nil {
+		defer f.Close()
+		log.SetOutput(io.MultiWriter(os.Stderr, f))
+		log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds)
+	}
+
 	// Create an instance of the app structure
 	app := NewApp()
 

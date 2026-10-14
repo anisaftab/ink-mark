@@ -1,5 +1,6 @@
 <script lang="ts">
 	import './layout.css';
+	import '#lib/devlog';
 	import favicon from '#lib/assets/favicon.svg';
 	import { newDocumentTrigger } from '#lib/stores';
 	import type { LayoutProps } from './$types';

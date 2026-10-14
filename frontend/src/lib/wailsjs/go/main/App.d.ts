@@ -4,6 +4,8 @@ import {main} from '../models';
 
 export function LoadDocument(arg1:string):Promise<main.DocumentDTO>;
 
+export function LogBrowserEvent(arg1:string,arg2:string,arg3:string):Promise<void>;
+
 export function NewDocument():Promise<main.DocumentDTO>;
 
 export function SaveDocument(arg1:string,arg2:string,arg3:string):Promise<void>;
