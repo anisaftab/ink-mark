@@ -12,8 +12,10 @@
 
 	let { editor, onDocChange }: Props = $props();
 
-	// Pass editor explicitly — avoids any getContext() / ProseKit context dependency.
-	const state = useEditorDerivedValue<BasicExtension, Record<string, { active: boolean; canExec: boolean }>>(
+	// useEditorDerivedValue without options — uses the ProseKit context which
+	// registers a defineUpdateHandler and re-fires on every editor state change.
+	// Passing { editor } would wrap it in readable() which is static and never updates.
+	const toolbarState = useEditorDerivedValue<BasicExtension, Record<string, { active: boolean; canExec: boolean }>>(
 		(e) => ({
 			bold:        { active: e.marks.bold?.isActive() ?? false,                    canExec: e.commands.toggleBold?.canExec() ?? false },
 			italic:      { active: e.marks.italic?.isActive() ?? false,                  canExec: e.commands.toggleItalic?.canExec() ?? false },
@@ -27,7 +29,6 @@
 			orderedList: { active: e.nodes.list?.isActive({ kind: 'ordered' }) ?? false, canExec: e.commands.toggleList?.canExec({ kind: 'ordered' }) ?? false },
 			blockquote:  { active: e.nodes.blockquote?.isActive() ?? false,              canExec: e.commands.toggleBlockquote?.canExec() ?? false },
 		}),
-		{ editor },
 	);
 
 	useDocChange(
@@ -38,29 +39,28 @@
 				// silently ignore unsupported node types
 			}
 		},
-		{ editor },
 	);
 </script>
 
 <div class="toolbar" role="toolbar" aria-label="Text formatting">
 	<div class="toolbar-group">
-		<button class="btn" class:active={$state.h1.active} disabled={!$state.h1.canExec} onclick={() => editor.commands.toggleHeading({ level: 1 })} title="Heading 1" type="button">H1</button>
-		<button class="btn" class:active={$state.h2.active} disabled={!$state.h2.canExec} onclick={() => editor.commands.toggleHeading({ level: 2 })} title="Heading 2" type="button">H2</button>
-		<button class="btn" class:active={$state.h3.active} disabled={!$state.h3.canExec} onclick={() => editor.commands.toggleHeading({ level: 3 })} title="Heading 3" type="button">H3</button>
+		<button class="btn" class:active={$toolbarState.h1.active} disabled={!$toolbarState.h1.canExec} onclick={() => editor.commands.toggleHeading({ level: 1 })} title="Heading 1" type="button">H1</button>
+		<button class="btn" class:active={$toolbarState.h2.active} disabled={!$toolbarState.h2.canExec} onclick={() => editor.commands.toggleHeading({ level: 2 })} title="Heading 2" type="button">H2</button>
+		<button class="btn" class:active={$toolbarState.h3.active} disabled={!$toolbarState.h3.canExec} onclick={() => editor.commands.toggleHeading({ level: 3 })} title="Heading 3" type="button">H3</button>
 	</div>
 	<div class="sep"></div>
 	<div class="toolbar-group">
-		<button class="btn icon" class:active={$state.bold.active}      disabled={!$state.bold.canExec}      onclick={() => editor.commands.toggleBold()}            title="Bold (Ctrl+B)"  type="button"><i class="ph-duotone ph-text-b"></i></button>
-		<button class="btn icon" class:active={$state.italic.active}    disabled={!$state.italic.canExec}    onclick={() => editor.commands.toggleItalic()}          title="Italic (Ctrl+I)" type="button"><i class="ph-duotone ph-text-italic"></i></button>
-		<button class="btn icon" class:active={$state.underline.active} disabled={!$state.underline.canExec} onclick={() => editor.commands.toggleUnderline()}       title="Underline"      type="button"><i class="ph-duotone ph-text-underline"></i></button>
-		<button class="btn icon" class:active={$state.strike.active}    disabled={!$state.strike.canExec}    onclick={() => editor.commands.toggleStrike()}          title="Strikethrough"  type="button"><i class="ph-duotone ph-text-strikethrough"></i></button>
-		<button class="btn icon" class:active={$state.code.active}      disabled={!$state.code.canExec}      onclick={() => editor.commands.toggleCode()}            title="Inline code"    type="button"><i class="ph-duotone ph-code"></i></button>
+		<button class="btn icon" class:active={$toolbarState.bold.active}      disabled={!$toolbarState.bold.canExec}      onclick={() => editor.commands.toggleBold()}            title="Bold (Ctrl+B)"  type="button"><i class="ph-duotone ph-text-b"></i></button>
+		<button class="btn icon" class:active={$toolbarState.italic.active}    disabled={!$toolbarState.italic.canExec}    onclick={() => editor.commands.toggleItalic()}          title="Italic (Ctrl+I)" type="button"><i class="ph-duotone ph-text-italic"></i></button>
+		<button class="btn icon" class:active={$toolbarState.underline.active} disabled={!$toolbarState.underline.canExec} onclick={() => editor.commands.toggleUnderline()}       title="Underline"      type="button"><i class="ph-duotone ph-text-underline"></i></button>
+		<button class="btn icon" class:active={$toolbarState.strike.active}    disabled={!$toolbarState.strike.canExec}    onclick={() => editor.commands.toggleStrike()}          title="Strikethrough"  type="button"><i class="ph-duotone ph-text-strikethrough"></i></button>
+		<button class="btn icon" class:active={$toolbarState.code.active}      disabled={!$toolbarState.code.canExec}      onclick={() => editor.commands.toggleCode()}            title="Inline code"    type="button"><i class="ph-duotone ph-code"></i></button>
 	</div>
 	<div class="sep"></div>
 	<div class="toolbar-group">
-		<button class="btn icon" class:active={$state.bulletList.active}  disabled={!$state.bulletList.canExec}  onclick={() => editor.commands.toggleList({ kind: 'bullet' })}  title="Bullet list"   type="button"><i class="ph-duotone ph-list-bullets"></i></button>
-		<button class="btn icon" class:active={$state.orderedList.active} disabled={!$state.orderedList.canExec} onclick={() => editor.commands.toggleList({ kind: 'ordered' })} title="Numbered list" type="button"><i class="ph-duotone ph-list-numbers"></i></button>
-		<button class="btn icon" class:active={$state.blockquote.active}  disabled={!$state.blockquote.canExec}  onclick={() => editor.commands.toggleBlockquote()}              title="Blockquote"    type="button"><i class="ph-duotone ph-quotes"></i></button>
+		<button class="btn icon" class:active={$toolbarState.bulletList.active}  disabled={!$toolbarState.bulletList.canExec}  onclick={() => editor.commands.toggleList({ kind: 'bullet' })}  title="Bullet list"   type="button"><i class="ph-duotone ph-list-bullets"></i></button>
+		<button class="btn icon" class:active={$toolbarState.orderedList.active} disabled={!$toolbarState.orderedList.canExec} onclick={() => editor.commands.toggleList({ kind: 'ordered' })} title="Numbered list" type="button"><i class="ph-duotone ph-list-numbers"></i></button>
+		<button class="btn icon" class:active={$toolbarState.blockquote.active}  disabled={!$toolbarState.blockquote.canExec}  onclick={() => editor.commands.toggleBlockquote()}              title="Blockquote"    type="button"><i class="ph-duotone ph-quotes"></i></button>
 	</div>
 </div>
 
@@ -68,10 +68,9 @@
 	.toolbar {
 		display: flex;
 		align-items: center;
+		justify-content: center;
 		gap: 4px;
-		padding: 8px 16px;
-		background: #F8F8F8;
-		border-bottom: 1px solid #E5E5E5;
+		padding: 6px 8px;
 		flex-shrink: 0;
 	}
 

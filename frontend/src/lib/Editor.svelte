@@ -25,8 +25,7 @@
 <ProseKit {editor}>
 	<div class="editor-shell">
 		<div class="editor-topbar">
-			<Toolbar {editor} onDocChange={(markdown) => { content = markdown; }} />
-			<div class="topbar-actions">
+			<div class="topbar-save">
 				<button
 					class="save-btn"
 					class:save-btn--saving={saving}
@@ -38,6 +37,8 @@
 					{saving ? 'Saving…' : 'Save'}
 				</button>
 			</div>
+			<Toolbar {editor} onDocChange={(markdown) => { content = markdown; }} />
+			<div class="topbar-spacer"></div>
 		</div>
 		<div class="editor-scroll">
 			<input
@@ -59,20 +60,24 @@
 		overflow: hidden;
 	}
 
-	/* ── Top bar: toolbar + save button ── */
+	/* ── Top bar: save | toolbar (centred) | spacer ── */
 	.editor-topbar {
-		display: flex;
+		display: grid;
+		grid-template-columns: 1fr auto 1fr;
 		align-items: center;
+		background: #F8F8F8;
 		border-bottom: 1px solid #E5E5E5;
 		flex-shrink: 0;
 	}
 
-	.topbar-actions {
+	.topbar-save {
 		display: flex;
 		align-items: center;
-		padding: 0 12px;
-		border-left: 1px solid #E5E5E5;
+		padding: 6px 12px;
 	}
+
+	/* mirrors .topbar-save width so toolbar stays perfectly centred */
+	.topbar-spacer {}
 
 	.save-btn {
 		display: flex;
