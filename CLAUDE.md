@@ -14,6 +14,33 @@ No server, no sync, no multi-user.
 
 ---
 
+## Agent Dev Loop
+
+When debugging, errors from all three runtime streams (Go backend, browser console, Vite) are captured to log files on disk that agents can read directly.
+
+**How it works:** Set `INKMARK_DEV_LOGS=1` before running `wails dev`, then read the log files at any point to see structured JSON-Lines entries with timestamp, level, source, and message.
+
+```powershell
+$env:INKMARK_DEV_LOGS="1"; wails dev
+```
+
+**Log files** (project root `/logs/`, gitignored — local only):
+
+| File | Source |
+| --- | --- |
+| `logs/go.log` | All Go `log.*` output — startup, DB errors, panics |
+| `logs/console.log` | Browser `console.error`, `console.warn`, uncaught JS errors |
+| `logs/vite.log` | Vite build warnings, HMR errors |
+
+**Reading logs as an agent:**
+```
+read_files: logs/go.log, logs/console.log, logs/vite.log
+```
+
+For full implementation details see `internal/logging/logger.go` (Go side) and `frontend/src/lib/devlog.ts` (browser side).
+
+---
+
 ## Rules
 
 ### General
