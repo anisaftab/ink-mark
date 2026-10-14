@@ -3,8 +3,7 @@
 	import 'prosekit/basic/typography.css';
 	import { defineBasicExtension } from 'prosekit/basic';
 	import { createEditor } from 'prosekit/core';
-	import { jsonFromNode } from 'prosekit/core';
-	import { ProseKit, useDocChange } from 'prosekit/svelte';
+	import { ProseKit } from 'prosekit/svelte';
 	import Toolbar from '#lib/Toolbar.svelte';
 
 	interface Props {
@@ -17,23 +16,16 @@
 	let { content = $bindable(), title = $bindable(), saving = false, onSave }: Props = $props();
 
 	const extension = defineBasicExtension();
-	const editor = createEditor({
-		extension,
-		defaultContent: (() => {
-			try { return JSON.parse(content); } catch { return undefined; }
-		})(),
-	});
 
-	// Keep content in sync when the document changes.
-	useDocChange((doc) => {
-		content = JSON.stringify(jsonFromNode(doc));
-	});
+	// Always start with an empty editor — loading markdown back into ProseKit
+	// requires schema-aware conversion which is not yet implemented.
+	const editor = createEditor({ extension });
 </script>
 
 <ProseKit {editor}>
 	<div class="editor-shell">
 		<div class="editor-topbar">
-			<Toolbar />
+			<Toolbar {editor} onDocChange={(markdown) => { content = markdown; }} />
 			<div class="topbar-actions">
 				<button
 					class="save-btn"
@@ -110,6 +102,9 @@
 		flex: 1;
 		overflow-y: auto;
 		padding: 40px 40px 48px;
+		/* Must be a positioned block so the ProseMirror min-height:100% resolves */
+		display: flex;
+		flex-direction: column;
 	}
 
 	/* ── Title input ── */
@@ -121,6 +116,9 @@
 		padding: 4px 2px;
 		border: none;
 		border-bottom: 2px solid transparent;
+		/* Undo @tailwindcss/forms global input overrides */
+		border-radius: 0;
+		box-shadow: none;
 		background: transparent;
 		font-family: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
 		font-size: 28px;
@@ -131,18 +129,30 @@
 		transition: border-color 150ms ease;
 	}
 
-	.title-input:focus { border-bottom-color: #0F6CBD; }
+	.title-input:focus {
+		border-bottom-color: #0F6CBD;
+		/* Undo @tailwindcss/forms focus ring */
+		box-shadow: none;
+		outline: none;
+	}
 	.title-input::placeholder { color: #AAAAAA; }
 
 	/* ── Editor ── */
 	.editor {
 		font-family: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
 		color: #1A1A1A;
+		/* Grow to fill the remaining scroll area so ProseMirror min-height:100% works */
+		flex: 1;
+		display: flex;
+		flex-direction: column;
 	}
 
 	.editor :global(.ProseMirror) {
 		max-width: 680px;
+		width: 100%;
 		margin: 0 auto;
+		flex: 1;
+		/* min-height fills the full visible scroll area so clicking anywhere focuses */
 		min-height: 100%;
 		outline: none;
 		--prosekit-hue: 210;
