@@ -42,6 +42,7 @@
 	},
 	"dependencies": {
 		"@phosphor-icons/web": "^2.1.2",
-		"prosekit": "^0.22.4"
+		"prosekit": "^0.22.4",
+		"prosemirror-markdown": "^1.13.8"
 	}
 }

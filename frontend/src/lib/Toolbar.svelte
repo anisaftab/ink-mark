@@ -1,42 +1,66 @@
 <script lang="ts">
 	import type { BasicExtension } from 'prosekit/basic';
-	import { useEditor, useEditorDerivedValue } from 'prosekit/svelte';
+	import type { Editor } from 'prosekit/core';
+	import type { Node as ProseMirrorNode } from '@prosekit/pm/model';
+	import { useEditorDerivedValue, useDocChange } from 'prosekit/svelte';
+	import { defaultMarkdownSerializer } from 'prosemirror-markdown';
 
-	const editor = useEditor<BasicExtension>({ update: true });
-	const state = useEditorDerivedValue<BasicExtension, Record<string, { active: boolean; canExec: boolean }>>((e) => ({
-		bold:        { active: e.marks.bold?.isActive() ?? false,                    canExec: e.commands.toggleBold?.canExec() ?? false },
-		italic:      { active: e.marks.italic?.isActive() ?? false,                  canExec: e.commands.toggleItalic?.canExec() ?? false },
-		underline:   { active: e.marks.underline?.isActive() ?? false,               canExec: e.commands.toggleUnderline?.canExec() ?? false },
-		strike:      { active: e.marks.strike?.isActive() ?? false,                  canExec: e.commands.toggleStrike?.canExec() ?? false },
-		code:        { active: e.marks.code?.isActive() ?? false,                    canExec: e.commands.toggleCode?.canExec() ?? false },
-		h1:          { active: e.nodes.heading?.isActive({ level: 1 }) ?? false,     canExec: e.commands.toggleHeading?.canExec({ level: 1 }) ?? false },
-		h2:          { active: e.nodes.heading?.isActive({ level: 2 }) ?? false,     canExec: e.commands.toggleHeading?.canExec({ level: 2 }) ?? false },
-		h3:          { active: e.nodes.heading?.isActive({ level: 3 }) ?? false,     canExec: e.commands.toggleHeading?.canExec({ level: 3 }) ?? false },
-		bulletList:  { active: e.nodes.list?.isActive({ kind: 'bullet' }) ?? false,  canExec: e.commands.toggleList?.canExec({ kind: 'bullet' }) ?? false },
-		orderedList: { active: e.nodes.list?.isActive({ kind: 'ordered' }) ?? false, canExec: e.commands.toggleList?.canExec({ kind: 'ordered' }) ?? false },
-		blockquote:  { active: e.nodes.blockquote?.isActive() ?? false,              canExec: e.commands.toggleBlockquote?.canExec() ?? false },
-	}));
+	interface Props {
+		editor: Editor<BasicExtension>;
+		onDocChange?: (markdown: string) => void;
+	}
+
+	let { editor, onDocChange }: Props = $props();
+
+	// Pass editor explicitly — avoids any getContext() / ProseKit context dependency.
+	const state = useEditorDerivedValue<BasicExtension, Record<string, { active: boolean; canExec: boolean }>>(
+		(e) => ({
+			bold:        { active: e.marks.bold?.isActive() ?? false,                    canExec: e.commands.toggleBold?.canExec() ?? false },
+			italic:      { active: e.marks.italic?.isActive() ?? false,                  canExec: e.commands.toggleItalic?.canExec() ?? false },
+			underline:   { active: e.marks.underline?.isActive() ?? false,               canExec: e.commands.toggleUnderline?.canExec() ?? false },
+			strike:      { active: e.marks.strike?.isActive() ?? false,                  canExec: e.commands.toggleStrike?.canExec() ?? false },
+			code:        { active: e.marks.code?.isActive() ?? false,                    canExec: e.commands.toggleCode?.canExec() ?? false },
+			h1:          { active: e.nodes.heading?.isActive({ level: 1 }) ?? false,     canExec: e.commands.toggleHeading?.canExec({ level: 1 }) ?? false },
+			h2:          { active: e.nodes.heading?.isActive({ level: 2 }) ?? false,     canExec: e.commands.toggleHeading?.canExec({ level: 2 }) ?? false },
+			h3:          { active: e.nodes.heading?.isActive({ level: 3 }) ?? false,     canExec: e.commands.toggleHeading?.canExec({ level: 3 }) ?? false },
+			bulletList:  { active: e.nodes.list?.isActive({ kind: 'bullet' }) ?? false,  canExec: e.commands.toggleList?.canExec({ kind: 'bullet' }) ?? false },
+			orderedList: { active: e.nodes.list?.isActive({ kind: 'ordered' }) ?? false, canExec: e.commands.toggleList?.canExec({ kind: 'ordered' }) ?? false },
+			blockquote:  { active: e.nodes.blockquote?.isActive() ?? false,              canExec: e.commands.toggleBlockquote?.canExec() ?? false },
+		}),
+		{ editor },
+	);
+
+	useDocChange(
+		(doc: ProseMirrorNode) => {
+			try {
+				onDocChange?.(defaultMarkdownSerializer.serialize(doc));
+			} catch {
+				// silently ignore unsupported node types
+			}
+		},
+		{ editor },
+	);
 </script>
 
 <div class="toolbar" role="toolbar" aria-label="Text formatting">
 	<div class="toolbar-group">
-		<button class="btn" class:active={$state.h1.active} disabled={!$state.h1.canExec} onclick={() => $editor.commands.toggleHeading({ level: 1 })} title="Heading 1" type="button">H1</button>
-		<button class="btn" class:active={$state.h2.active} disabled={!$state.h2.canExec} onclick={() => $editor.commands.toggleHeading({ level: 2 })} title="Heading 2" type="button">H2</button>
-		<button class="btn" class:active={$state.h3.active} disabled={!$state.h3.canExec} onclick={() => $editor.commands.toggleHeading({ level: 3 })} title="Heading 3" type="button">H3</button>
+		<button class="btn" class:active={$state.h1.active} disabled={!$state.h1.canExec} onclick={() => editor.commands.toggleHeading({ level: 1 })} title="Heading 1" type="button">H1</button>
+		<button class="btn" class:active={$state.h2.active} disabled={!$state.h2.canExec} onclick={() => editor.commands.toggleHeading({ level: 2 })} title="Heading 2" type="button">H2</button>
+		<button class="btn" class:active={$state.h3.active} disabled={!$state.h3.canExec} onclick={() => editor.commands.toggleHeading({ level: 3 })} title="Heading 3" type="button">H3</button>
 	</div>
 	<div class="sep"></div>
 	<div class="toolbar-group">
-		<button class="btn icon" class:active={$state.bold.active}      disabled={!$state.bold.canExec}      onclick={() => $editor.commands.toggleBold()}            title="Bold (Ctrl+B)"  type="button"><i class="ph-duotone ph-text-b"></i></button>
-		<button class="btn icon" class:active={$state.italic.active}    disabled={!$state.italic.canExec}    onclick={() => $editor.commands.toggleItalic()}          title="Italic (Ctrl+I)" type="button"><i class="ph-duotone ph-text-italic"></i></button>
-		<button class="btn icon" class:active={$state.underline.active} disabled={!$state.underline.canExec} onclick={() => $editor.commands.toggleUnderline()}       title="Underline"      type="button"><i class="ph-duotone ph-text-underline"></i></button>
-		<button class="btn icon" class:active={$state.strike.active}    disabled={!$state.strike.canExec}    onclick={() => $editor.commands.toggleStrike()}          title="Strikethrough"  type="button"><i class="ph-duotone ph-text-strikethrough"></i></button>
-		<button class="btn icon" class:active={$state.code.active}      disabled={!$state.code.canExec}      onclick={() => $editor.commands.toggleCode()}            title="Inline code"    type="button"><i class="ph-duotone ph-code"></i></button>
+		<button class="btn icon" class:active={$state.bold.active}      disabled={!$state.bold.canExec}      onclick={() => editor.commands.toggleBold()}            title="Bold (Ctrl+B)"  type="button"><i class="ph-duotone ph-text-b"></i></button>
+		<button class="btn icon" class:active={$state.italic.active}    disabled={!$state.italic.canExec}    onclick={() => editor.commands.toggleItalic()}          title="Italic (Ctrl+I)" type="button"><i class="ph-duotone ph-text-italic"></i></button>
+		<button class="btn icon" class:active={$state.underline.active} disabled={!$state.underline.canExec} onclick={() => editor.commands.toggleUnderline()}       title="Underline"      type="button"><i class="ph-duotone ph-text-underline"></i></button>
+		<button class="btn icon" class:active={$state.strike.active}    disabled={!$state.strike.canExec}    onclick={() => editor.commands.toggleStrike()}          title="Strikethrough"  type="button"><i class="ph-duotone ph-text-strikethrough"></i></button>
+		<button class="btn icon" class:active={$state.code.active}      disabled={!$state.code.canExec}      onclick={() => editor.commands.toggleCode()}            title="Inline code"    type="button"><i class="ph-duotone ph-code"></i></button>
 	</div>
 	<div class="sep"></div>
 	<div class="toolbar-group">
-		<button class="btn icon" class:active={$state.bulletList.active}  disabled={!$state.bulletList.canExec}  onclick={() => $editor.commands.toggleList({ kind: 'bullet' })}  title="Bullet list"   type="button"><i class="ph-duotone ph-list-bullets"></i></button>
-		<button class="btn icon" class:active={$state.orderedList.active} disabled={!$state.orderedList.canExec} onclick={() => $editor.commands.toggleList({ kind: 'ordered' })} title="Numbered list" type="button"><i class="ph-duotone ph-list-numbers"></i></button>
-		<button class="btn icon" class:active={$state.blockquote.active}  disabled={!$state.blockquote.canExec}  onclick={() => $editor.commands.toggleBlockquote()}              title="Blockquote"    type="button"><i class="ph-duotone ph-quotes"></i></button>
+		<button class="btn icon" class:active={$state.bulletList.active}  disabled={!$state.bulletList.canExec}  onclick={() => editor.commands.toggleList({ kind: 'bullet' })}  title="Bullet list"   type="button"><i class="ph-duotone ph-list-bullets"></i></button>
+		<button class="btn icon" class:active={$state.orderedList.active} disabled={!$state.orderedList.canExec} onclick={() => editor.commands.toggleList({ kind: 'ordered' })} title="Numbered list" type="button"><i class="ph-duotone ph-list-numbers"></i></button>
+		<button class="btn icon" class:active={$state.blockquote.active}  disabled={!$state.blockquote.canExec}  onclick={() => editor.commands.toggleBlockquote()}              title="Blockquote"    type="button"><i class="ph-duotone ph-quotes"></i></button>
 	</div>
 </div>
 
