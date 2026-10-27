@@ -60,6 +60,22 @@ func (r *Repository) GetByID(ctx context.Context, id string) (Document, error) {
 	return doc, nil
 }
 
+// GetByFilePath returns the document whose file_path matches exactly.
+// Returns ErrNotFound if no document exists with that path.
+func (r *Repository) GetByFilePath(ctx context.Context, filePath string) (Document, error) {
+	var doc Document
+
+	result := r.db.WithContext(ctx).Where("file_path = ?", filePath).First(&doc)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return Document{}, ErrNotFound
+		}
+		return Document{}, fmt.Errorf("get document by path %q: %w", filePath, result.Error)
+	}
+
+	return doc, nil
+}
+
 // GetByTitle returns the first document matching the given title (case-insensitive).
 // Returns ErrNotFound if no document exists with that title.
 func (r *Repository) GetByTitle(ctx context.Context, title string) (Document, error) {
