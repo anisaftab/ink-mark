@@ -11,9 +11,11 @@
 		title: string;
 		saving?: boolean;
 		onSave?: () => void;
+		onContentChange?: (value: string) => void;
+		onTitleChange?: (value: string) => void;
 	}
 
-	let { content = $bindable(), title = $bindable(), saving = false, onSave }: Props = $props();
+	let { content, title, saving = false, onSave, onContentChange, onTitleChange }: Props = $props();
 
 	const extension = defineBasicExtension();
 
@@ -25,25 +27,13 @@
 <ProseKit {editor}>
 	<div class="editor-shell">
 		<div class="editor-topbar">
-			<div class="topbar-save">
-				<button
-					class="save-btn"
-					class:save-btn--saving={saving}
-					disabled={saving}
-					onclick={onSave}
-					type="button"
-				>
-					<i class="ph-duotone ph-floppy-disk"></i>
-					{saving ? 'Saving…' : 'Save'}
-				</button>
-			</div>
-			<Toolbar {editor} onDocChange={(markdown) => { content = markdown; }} />
-			<div class="topbar-spacer"></div>
+			<Toolbar {editor} onDocChange={(markdown) => { onContentChange?.(markdown); }} />
 		</div>
 		<div class="editor-scroll">
 			<input
 				class="title-input"
-				bind:value={title}
+				value={title}
+				oninput={(e) => onTitleChange?.((e.currentTarget as HTMLInputElement).value)}
 				placeholder="Untitled"
 				type="text"
 			/>
@@ -60,47 +50,15 @@
 		overflow: hidden;
 	}
 
-	/* ── Top bar: save | toolbar (centred) | spacer ── */
+	/* ── Top bar: toolbar only ── */
 	.editor-topbar {
-		display: grid;
-		grid-template-columns: 1fr auto 1fr;
+		display: flex;
 		align-items: center;
-		background: #F8F8F8;
-		border-bottom: 1px solid #E5E5E5;
+		justify-content: center;
+		background: var(--surface-panel, #fdfcfa);
+		border-bottom: 1px solid var(--border, rgba(28,25,23,0.08));
 		flex-shrink: 0;
 	}
-
-	.topbar-save {
-		display: flex;
-		align-items: center;
-		padding: 6px 12px;
-	}
-
-	/* mirrors .topbar-save width so toolbar stays perfectly centred */
-	.topbar-spacer {}
-
-	.save-btn {
-		display: flex;
-		align-items: center;
-		gap: 5px;
-		padding: 5px 12px;
-		border: 1px solid #0F6CBD;
-		border-radius: 6px;
-		background: #0F6CBD;
-		color: #fff;
-		font-family: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
-		font-size: 12px;
-		font-weight: 600;
-		cursor: pointer;
-		white-space: nowrap;
-		transition: background 120ms ease, opacity 120ms ease;
-	}
-
-	.save-btn:hover:not(:disabled) { background: #0D5EA8; }
-	.save-btn:active:not(:disabled) { transform: scale(0.97); transition-duration: 80ms; }
-	.save-btn:focus-visible { box-shadow: 0 0 0 2px #005FB8; }
-	.save-btn--saving { opacity: 0.65; cursor: not-allowed; }
-	.save-btn:disabled { cursor: not-allowed; }
 
 	/* ── Scrollable area ── */
 	.editor-scroll {
@@ -112,7 +70,6 @@
 		flex-direction: column;
 	}
 
-	/* ── Title input ── */
 	.title-input {
 		display: block;
 		width: 100%;
@@ -121,32 +78,29 @@
 		padding: 4px 2px;
 		border: none;
 		border-bottom: 2px solid transparent;
-		/* Undo @tailwindcss/forms global input overrides */
 		border-radius: 0;
 		box-shadow: none;
 		background: transparent;
-		font-family: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+		font-family: var(--font, 'Segoe UI Variable', system-ui, sans-serif);
 		font-size: 28px;
 		font-weight: 700;
-		color: #1A1A1A;
+		color: var(--ink, #1c1917);
 		letter-spacing: -0.02em;
 		outline: none;
 		transition: border-color 150ms ease;
 	}
 
 	.title-input:focus {
-		border-bottom-color: #0F6CBD;
-		/* Undo @tailwindcss/forms focus ring */
+		border-bottom-color: var(--accent, #0F6CBD);
 		box-shadow: none;
 		outline: none;
 	}
-	.title-input::placeholder { color: #AAAAAA; }
+	.title-input::placeholder { color: var(--ink-subtle, #a8a29e); }
 
 	/* ── Editor ── */
 	.editor {
-		font-family: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
-		color: #1A1A1A;
-		/* Grow to fill the remaining scroll area so ProseMirror min-height:100% works */
+		font-family: var(--font, 'Segoe UI Variable', system-ui, sans-serif);
+		color: var(--ink, #1c1917);
 		flex: 1;
 		display: flex;
 		flex-direction: column;
@@ -157,7 +111,6 @@
 		width: 100%;
 		margin: 0 auto;
 		flex: 1;
-		/* min-height fills the full visible scroll area so clicking anywhere focuses */
 		min-height: 100%;
 		outline: none;
 		--prosekit-hue: 210;
@@ -169,28 +122,28 @@
 	.editor :global(.ProseMirror h4),
 	.editor :global(.ProseMirror h5),
 	.editor :global(.ProseMirror h6) {
-		font-family: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
-		color: #1A1A1A;
+		font-family: var(--font, 'Segoe UI Variable', system-ui, sans-serif);
+		color: var(--ink, #1c1917);
 		letter-spacing: -0.01em;
 	}
 
 	.editor :global(.ProseMirror p) {
-		font-family: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
-		color: #1A1A1A;
+		font-family: var(--font, 'Segoe UI Variable', system-ui, sans-serif);
+		color: var(--ink, #1c1917);
 		font-size: 16px;
 		line-height: 1.65;
 	}
 
 	.editor :global(.ProseMirror code) {
-		background: #F0F4F9;
-		color: #0F6CBD;
+		background: rgba(15, 108, 189, 0.08);
+		color: var(--accent, #0F6CBD);
 		border-radius: 4px;
 		padding: 1px 5px;
 		font-size: 0.88em;
 	}
 
-	.editor :global(.ProseMirror blockquote) { color: #606060; border-left-color: #0F6CBD; }
-	.editor :global(.ProseMirror a) { color: #0F6CBD; }
-	.editor :global(.ProseMirror hr) { border-color: #E5E5E5; }
+	.editor :global(.ProseMirror blockquote) { color: var(--ink-muted, #57534e); border-left-color: var(--accent, #0F6CBD); }
+	.editor :global(.ProseMirror a) { color: var(--accent, #0F6CBD); }
+	.editor :global(.ProseMirror hr) { border-color: var(--border, rgba(28,25,23,0.08)); }
 </style>
 
