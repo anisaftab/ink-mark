@@ -4,6 +4,7 @@
 	import { defineBasicExtension } from 'prosekit/basic';
 	import { createEditor } from 'prosekit/core';
 	import { ProseKit } from 'prosekit/svelte';
+	import { useEditorDerivedValue } from 'prosekit/svelte';
 	import Toolbar from '#lib/Toolbar.svelte';
 
 	interface Props {
@@ -13,15 +14,34 @@
 		onSave?: () => void;
 		onContentChange?: (value: string) => void;
 		onTitleChange?: (value: string) => void;
+		onCursorChange?: (line: number, col: number) => void;
 	}
 
-	let { content, title, saving = false, onSave, onContentChange, onTitleChange }: Props = $props();
+	let { content, title, saving = false, onSave, onContentChange, onTitleChange, onCursorChange }: Props = $props();
 
 	const extension = defineBasicExtension();
-
-	// Always start with an empty editor — loading markdown back into ProseKit
-	// requires schema-aware conversion which is not yet implemented.
 	const editor = createEditor({ extension });
+
+	// Track cursor position and notify parent via onCursorChange.
+	const cursorPos = useEditorDerivedValue<ReturnType<typeof defineBasicExtension>, { line: number; col: number }>(
+		(e) => {
+			const sel = e.state.selection;
+			const fromPos = sel.$from;
+			// Count newlines in text content before this position to get line number.
+			let textBefore = '';
+			e.state.doc.nodesBetween(0, fromPos.pos, (node) => {
+				if (node.isText) textBefore += node.text ?? '';
+				if (node.type.name === 'paragraph' || node.type.name === 'heading') textBefore += '\n';
+			});
+			const line = (textBefore.match(/\n/g)?.length ?? 0) + 1;
+			return { line, col: fromPos.parentOffset + 1 };
+		},
+	);
+
+	$effect(() => {
+		const pos = $cursorPos;
+		if (pos) onCursorChange?.(pos.line, pos.col);
+	});
 </script>
 
 <ProseKit {editor}>
