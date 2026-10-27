@@ -7,7 +7,11 @@
 		openInTab,
 		updateDocumentContent,
 		updateDocumentTitle,
-		allDocuments
+		allDocuments,
+		dirtyDocumentIds,
+		markDirty,
+		markClean,
+		editorStats
 	} from '#lib/stores';
 	import MarkdownIt from 'markdown-it';
 
@@ -31,6 +35,14 @@
 		});
 		return unsub;
 	});
+
+	// Ctrl+S → save.
+	function handleKeydown(e: KeyboardEvent) {
+		if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+			e.preventDefault();
+			handleSave();
+		}
+	}
 
 	async function handleNewDocument(): Promise<void> {
 		if (loadingNew) return;
@@ -82,14 +94,34 @@
 				$activeDocument.title,
 				$activeDocument.content
 			);
+			markClean($activeDocument.id);
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Failed to save document';
 		} finally {
 			saving = false;
 		}
 	}
+
+	function handleContentChange(id: string, value: string) {
+		updateDocumentContent(id, value);
+		markDirty(id);
+		// Update word count from markdown content.
+		const words = value.trim() ? value.trim().split(/\s+/).length : 0;
+		editorStats.update((s) => ({ ...s, words }));
+	}
+
+	function handleTitleChange(id: string, value: string) {
+		updateDocumentTitle(id, value);
+		markDirty(id);
+	}
+
+	function handleCursorChange(line: number, col: number) {
+		editorStats.update((s) => ({ ...s, line, col }));
+	}
 </script>
 
+
+<svelte:window onkeydown={handleKeydown} />
 
 {#if $activeDocument}
 	<div class="doc-toolbar">
@@ -101,6 +133,9 @@
 			{#if saving}
 				<i class="ph-duotone ph-circle-notch" style="font-size:14px;color:var(--ic-settings);animation:spin 900ms linear infinite"></i>
 				Saving…
+			{:else if $dirtyDocumentIds.has($activeDocument.id)}
+				<i class="ph-duotone ph-dot-outline" style="font-size:14px;color:var(--ic-pin)"></i>
+				Unsaved
 			{:else}
 				<i class="ph-duotone ph-check-circle" style="font-size:14px;color:var(--ic-secure)"></i>
 				Saved
@@ -150,8 +185,9 @@
 				<Editor
 					content={$activeDocument.content}
 					title={$activeDocument.title}
-					onContentChange={(v) => updateDocumentContent($activeDocument!.id, v)}
-					onTitleChange={(v) => updateDocumentTitle($activeDocument!.id, v)}
+					onContentChange={(v) => handleContentChange($activeDocument!.id, v)}
+					onTitleChange={(v) => handleTitleChange($activeDocument!.id, v)}
+					onCursorChange={handleCursorChange}
 					onSave={handleSave}
 					{saving}
 				/>
