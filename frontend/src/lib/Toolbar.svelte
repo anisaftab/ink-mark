@@ -79,7 +79,7 @@
 	.sep {
 		width: 1px;
 		height: 18px;
-		background: #D0D0D0;
+		background: var(--border-strong, rgba(28,25,23,0.15));
 		margin: 0 8px;
 		flex-shrink: 0;
 	}
@@ -94,8 +94,8 @@
 		border: 1px solid transparent;
 		border-radius: 6px;
 		background: transparent;
-		color: #606060;
-		font-family: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+		color: var(--ink-muted, #57534e);
+		font-family: var(--font, 'Segoe UI Variable', system-ui, sans-serif);
 		font-size: 12px;
 		font-weight: 600;
 		letter-spacing: -0.02em;
@@ -107,23 +107,23 @@
 	.icon { font-size: 16px; padding: 0; }
 
 	.btn:hover:not(:disabled) {
-		background: #F0F0F0;
-		color: #1A1A1A;
-		border-color: #E5E5E5;
+		background: var(--wash-hover, rgba(28,25,23,0.045));
+		color: var(--ink, #1c1917);
+		border-color: var(--border, rgba(28,25,23,0.08));
 	}
 
 	.btn:active:not(:disabled) {
-		background: #E7E7E7;
+		background: var(--wash-selected, rgba(28,25,23,0.08));
 		transform: scale(0.97);
 		transition-duration: 80ms;
 	}
 
-	.btn:focus-visible { box-shadow: 0 0 0 2px #005FB8; }
+	.btn:focus-visible { box-shadow: 0 0 0 2px var(--accent, #0F6CBD); }
 
 	.btn.active {
-		background: rgba(15, 108, 189, 0.10);
-		color: #0F6CBD;
-		border-color: rgba(15, 108, 189, 0.25);
+		background: var(--accent-muted, rgba(15,108,189,0.10));
+		color: var(--accent, #0F6CBD);
+		border-color: var(--accent-border, rgba(15,108,189,0.28));
 	}
 
 	.btn.active:hover:not(:disabled) { background: rgba(15, 108, 189, 0.16); }
