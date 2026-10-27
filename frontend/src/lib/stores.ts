@@ -1,5 +1,5 @@
 import { writable, derived } from 'svelte/store';
-import type { Document } from '#lib/types';
+import type { Document, Project } from '#lib/types';
 
 /** Increment to trigger a new document creation from anywhere in the tree. */
 export const newDocumentTrigger = writable(0);
@@ -60,4 +60,27 @@ export function updateDocumentTitle(id: string, title: string): void {
 
 /** Flat list of all documents known to the sidebar (loaded on startup). */
 export const allDocuments = writable<Document[]>([]);
+
+/** All projects with their embedded document metadata (loaded on startup). */
+export const allProjects = writable<Project[]>([]);
+
+/**
+ * Set of document IDs that have unsaved changes.
+ * A document is dirty when its in-memory content/title differs from what was
+ * last saved. The page clears an ID here after a successful SaveDocument call.
+ */
+export const dirtyDocumentIds = writable<Set<string>>(new Set());
+
+/** Mark a document as having unsaved changes. */
+export function markDirty(id: string): void {
+	dirtyDocumentIds.update((s) => { s.add(id); return new Set(s); });
+}
+
+/** Clear the dirty flag after a successful save. */
+export function markClean(id: string): void {
+	dirtyDocumentIds.update((s) => { s.delete(id); return new Set(s); });
+}
+
+/** Live editor statistics surfaced from the active editor instance. */
+export const editorStats = writable({ words: 0, line: 1, col: 1 });
 

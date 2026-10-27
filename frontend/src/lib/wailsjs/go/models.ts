@@ -5,6 +5,7 @@ export namespace main {
 	    title: string;
 	    filePath: string;
 	    content: string;
+	    favorited: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new DocumentDTO(source);
@@ -16,6 +17,7 @@ export namespace main {
 	        this.title = source["title"];
 	        this.filePath = source["filePath"];
 	        this.content = source["content"];
+	        this.favorited = source["favorited"];
 	    }
 	}
 	export class ProjectDTO {

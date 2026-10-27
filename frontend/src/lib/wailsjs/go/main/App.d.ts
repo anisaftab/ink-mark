@@ -4,11 +4,15 @@ import {main} from '../models';
 
 export function AddDocumentToProject(arg1:string,arg2:string):Promise<void>;
 
+export function FavoriteDocument(arg1:string):Promise<void>;
+
 export function GetProjectByName(arg1:string):Promise<main.ProjectDTO>;
 
 export function GetProjectDocuments(arg1:string):Promise<Array<main.DocumentDTO>>;
 
 export function ListDocuments():Promise<Array<main.DocumentDTO>>;
+
+export function ListFavorited():Promise<Array<main.DocumentDTO>>;
 
 export function ListProjects():Promise<Array<main.ProjectDTO>>;
 
@@ -22,4 +26,8 @@ export function NewProject():Promise<main.ProjectDTO>;
 
 export function OpenDocument():Promise<main.DocumentDTO>;
 
+export function OpenFolderAsProject():Promise<main.ProjectDTO>;
+
 export function SaveDocument(arg1:string,arg2:string,arg3:string):Promise<void>;
+
+export function UnfavoriteDocument(arg1:string):Promise<void>;

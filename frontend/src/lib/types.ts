@@ -4,6 +4,7 @@ export interface Document {
 	title: string;
 	filePath: string;
 	content: string;
+	favorited: boolean;
 }
 
 /** Mirrors ProjectDTO from app.go */

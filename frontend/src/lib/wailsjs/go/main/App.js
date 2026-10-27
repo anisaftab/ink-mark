@@ -6,6 +6,10 @@ export function AddDocumentToProject(arg1, arg2) {
   return window['go']['main']['App']['AddDocumentToProject'](arg1, arg2);
 }
 
+export function FavoriteDocument(arg1) {
+  return window['go']['main']['App']['FavoriteDocument'](arg1);
+}
+
 export function GetProjectByName(arg1) {
   return window['go']['main']['App']['GetProjectByName'](arg1);
 }
@@ -16,6 +20,10 @@ export function GetProjectDocuments(arg1) {
 
 export function ListDocuments() {
   return window['go']['main']['App']['ListDocuments']();
+}
+
+export function ListFavorited() {
+  return window['go']['main']['App']['ListFavorited']();
 }
 
 export function ListProjects() {
@@ -42,6 +50,14 @@ export function OpenDocument() {
   return window['go']['main']['App']['OpenDocument']();
 }
 
+export function OpenFolderAsProject() {
+  return window['go']['main']['App']['OpenFolderAsProject']();
+}
+
 export function SaveDocument(arg1, arg2, arg3) {
   return window['go']['main']['App']['SaveDocument'](arg1, arg2, arg3);
+}
+
+export function UnfavoriteDocument(arg1) {
+  return window['go']['main']['App']['UnfavoriteDocument'](arg1);
 }
