@@ -84,10 +84,11 @@ func (a *App) startup(ctx context.Context) {
 
 // DocumentDTO is the data transfer object returned to the frontend.
 type DocumentDTO struct {
-	ID       string `json:"id"`
-	Title    string `json:"title"`
-	FilePath string `json:"filePath"`
-	Content  string `json:"content"` // file content read from disk
+	ID        string `json:"id"`
+	Title     string `json:"title"`
+	FilePath  string `json:"filePath"`
+	Content   string `json:"content"` // file content read from disk
+	Favorited bool   `json:"favorited"`
 }
 
 // NewDocument opens a save-file dialog to choose where the document lives,
@@ -133,10 +134,11 @@ func (a *App) NewDocument() (DocumentDTO, error) {
 	}
 
 	return DocumentDTO{
-		ID:       doc.ID,
-		Title:    doc.Title,
-		FilePath: doc.FilePath,
-		Content:  "",
+		ID:        doc.ID,
+		Title:     doc.Title,
+		FilePath:  doc.FilePath,
+		Content:   "",
+		Favorited: doc.Favorited,
 	}, nil
 }
 
@@ -210,10 +212,11 @@ func (a *App) OpenDocument() (DocumentDTO, error) {
 	}
 
 	return DocumentDTO{
-		ID:       doc.ID,
-		Title:    doc.Title,
-		FilePath: doc.FilePath,
-		Content:  string(data),
+		ID:        doc.ID,
+		Title:     doc.Title,
+		FilePath:  doc.FilePath,
+		Content:   string(data),
+		Favorited: doc.Favorited,
 	}, nil
 }
 
@@ -231,10 +234,11 @@ func (a *App) ListDocuments() ([]DocumentDTO, error) {
 	dtos := make([]DocumentDTO, len(docs))
 	for i, doc := range docs {
 		dtos[i] = DocumentDTO{
-			ID:       doc.ID,
-			Title:    doc.Title,
-			FilePath: doc.FilePath,
-			Content:  "", // content is loaded on demand via LoadDocument
+			ID:        doc.ID,
+			Title:     doc.Title,
+			FilePath:  doc.FilePath,
+			Content:   "", // content is loaded on demand via LoadDocument
+			Favorited: doc.Favorited,
 		}
 	}
 
@@ -253,10 +257,11 @@ func (a *App) LoadDocument(id string) (DocumentDTO, error) {
 	}
 
 	return DocumentDTO{
-		ID:       doc.ID,
-		Title:    doc.Title,
-		FilePath: doc.FilePath,
-		Content:  string(data),
+		ID:        doc.ID,
+		Title:     doc.Title,
+		FilePath:  doc.FilePath,
+		Content:   string(data),
+		Favorited: doc.Favorited,
 	}, nil
 }
 
@@ -338,10 +343,11 @@ func (a *App) ListProjects() ([]ProjectDTO, error) {
 		docDTOs := make([]DocumentDTO, len(docs))
 		for j, doc := range docs {
 			docDTOs[j] = DocumentDTO{
-				ID:       doc.ID,
-				Title:    doc.Title,
-				FilePath: doc.FilePath,
-				Content:  "",
+				ID:        doc.ID,
+				Title:     doc.Title,
+				FilePath:  doc.FilePath,
+				Content:   "",
+				Favorited: doc.Favorited,
 			}
 		}
 		dtos[i] = ProjectDTO{
@@ -369,10 +375,11 @@ func (a *App) GetProjectDocuments(projectID string) ([]DocumentDTO, error) {
 	dtos := make([]DocumentDTO, len(docs))
 	for i, doc := range docs {
 		dtos[i] = DocumentDTO{
-			ID:       doc.ID,
-			Title:    doc.Title,
-			FilePath: doc.FilePath,
-			Content:  "",
+			ID:        doc.ID,
+			Title:     doc.Title,
+			FilePath:  doc.FilePath,
+			Content:   "",
+			Favorited: doc.Favorited,
 		}
 	}
 
@@ -402,10 +409,11 @@ func (a *App) GetProjectByName(name string) (ProjectDTO, error) {
 	docDTOs := make([]DocumentDTO, len(docs))
 	for i, doc := range docs {
 		docDTOs[i] = DocumentDTO{
-			ID:       doc.ID,
-			Title:    doc.Title,
-			FilePath: doc.FilePath,
-			Content:  "",
+			ID:        doc.ID,
+			Title:     doc.Title,
+			FilePath:  doc.FilePath,
+			Content:   "",
+			Favorited: doc.Favorited,
 		}
 	}
 
@@ -436,5 +444,137 @@ func (a *App) AddDocumentToProject(projectID, documentID string) error {
 	}
 
 	return nil
+}
+
+// OpenFolderAsProject opens a folder-picker dialog, scans the chosen folder for
+// .md files, creates a project record, registers each file as a document, and
+// assigns it to the new project. Returns the full ProjectDTO.
+func (a *App) OpenFolderAsProject() (ProjectDTO, error) {
+	if a.projects == nil {
+		return ProjectDTO{}, fmt.Errorf("database not ready")
+	}
+
+	folderPath, err := runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{
+		Title: "Open Folder as Project",
+	})
+	if err != nil {
+		return ProjectDTO{}, fmt.Errorf("folder dialog: %w", err)
+	}
+	if folderPath == "" {
+		return ProjectDTO{}, nil // user cancelled
+	}
+
+	name := filepath.Base(folderPath)
+
+	p, err := a.projects.Create(a.ctx, project.Input{
+		Name:       name,
+		FolderPath: folderPath,
+	})
+	if err != nil {
+		return ProjectDTO{}, fmt.Errorf("create project: %w", err)
+	}
+
+	// Scan for .md files one level deep.
+	entries, err := os.ReadDir(folderPath)
+	if err != nil {
+		return ProjectDTO{}, fmt.Errorf("read folder %q: %w", folderPath, err)
+	}
+
+	var docDTOs []DocumentDTO
+	for _, entry := range entries {
+		if entry.IsDir() || filepath.Ext(entry.Name()) != ".md" {
+			continue
+		}
+
+		filePath := filepath.Join(folderPath, entry.Name())
+		title := entry.Name()
+		if ext := filepath.Ext(title); ext != "" {
+			title = title[:len(title)-len(ext)]
+		}
+
+		// Reuse existing record or create a new one.
+		doc, err := a.documents.GetByFilePath(a.ctx, filePath)
+		if errors.Is(err, document.ErrNotFound) {
+			doc, err = a.documents.Create(a.ctx, document.Input{
+				Title:    title,
+				FilePath: filePath,
+			})
+		}
+		if err != nil {
+			continue // skip files that can't be registered
+		}
+
+		_ = a.projects.AddDocument(a.ctx, p.ID, doc.ID)
+
+		docDTOs = append(docDTOs, DocumentDTO{
+			ID:        doc.ID,
+			Title:     doc.Title,
+			FilePath:  doc.FilePath,
+			Content:   "",
+			Favorited: doc.Favorited,
+		})
+	}
+
+	if docDTOs == nil {
+		docDTOs = []DocumentDTO{}
+	}
+
+	return ProjectDTO{
+		ID:         p.ID,
+		Name:       p.Name,
+		FolderPath: p.FolderPath,
+		Documents:  docDTOs,
+	}, nil
+}
+
+// FavoriteDocument marks a document as a favourite.
+func (a *App) FavoriteDocument(id string) error {
+	if a.documents == nil {
+		return fmt.Errorf("database not ready")
+	}
+
+	if err := a.documents.FavoriteDocument(a.ctx, id); err != nil {
+		return fmt.Errorf("favorite document: %w", err)
+	}
+
+	return nil
+}
+
+// UnfavoriteDocument removes the favourite mark from a document.
+func (a *App) UnfavoriteDocument(id string) error {
+	if a.documents == nil {
+		return fmt.Errorf("database not ready")
+	}
+
+	if err := a.documents.UnfavoriteDocument(a.ctx, id); err != nil {
+		return fmt.Errorf("unfavorite document: %w", err)
+	}
+
+	return nil
+}
+
+// ListFavorited returns all favourited documents ordered by most recently updated.
+func (a *App) ListFavorited() ([]DocumentDTO, error) {
+	if a.documents == nil {
+		return nil, fmt.Errorf("database not ready")
+	}
+
+	docs, err := a.documents.ListFavorited(a.ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list favorited: %w", err)
+	}
+
+	dtos := make([]DocumentDTO, len(docs))
+	for i, doc := range docs {
+		dtos[i] = DocumentDTO{
+			ID:        doc.ID,
+			Title:     doc.Title,
+			FilePath:  doc.FilePath,
+			Content:   "",
+			Favorited: doc.Favorited,
+		}
+	}
+
+	return dtos, nil
 }
 
