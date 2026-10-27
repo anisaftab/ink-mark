@@ -13,7 +13,8 @@ type Document struct {
 	ID        string    `gorm:"type:text;primaryKey"`
 	Title     string    `gorm:"type:text;not null;default:'Untitled'"`
 	FilePath  string    `gorm:"type:text;not null"`
-	ProjectID *string   `gorm:"type:text;index"`           // nil when the document is standalone
+	ProjectID *string   `gorm:"type:text;index"`  // nil when the document is standalone
+	Favorited bool      `gorm:"not null;default:false"`
 	CreatedAt time.Time `gorm:"not null;autoCreateTime"`
 	UpdatedAt time.Time `gorm:"not null;autoUpdateTime"`
 }

@@ -134,6 +134,58 @@ func (r *Repository) Update(ctx context.Context, id string, input Input) (Docume
 	return r.GetByID(ctx, id)
 }
 
+// FavoriteDocument marks a document as favorited.
+// Returns ErrNotFound if no document exists with that ID.
+func (r *Repository) FavoriteDocument(ctx context.Context, id string) error {
+	result := r.db.WithContext(ctx).
+		Model(&Document{}).
+		Where("id = ?", id).
+		Update("favorited", true)
+
+	if result.Error != nil {
+		return fmt.Errorf("favorite document %s: %w", id, result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return ErrNotFound
+	}
+
+	return nil
+}
+
+// UnfavoriteDocument removes the favorited mark from a document.
+// Returns ErrNotFound if no document exists with that ID.
+func (r *Repository) UnfavoriteDocument(ctx context.Context, id string) error {
+	result := r.db.WithContext(ctx).
+		Model(&Document{}).
+		Where("id = ?", id).
+		Update("favorited", false)
+
+	if result.Error != nil {
+		return fmt.Errorf("unfavorite document %s: %w", id, result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return ErrNotFound
+	}
+
+	return nil
+}
+
+// ListFavorited returns all favorited documents ordered by most recently updated first.
+func (r *Repository) ListFavorited(ctx context.Context) ([]Document, error) {
+	var docs []Document
+
+	result := r.db.WithContext(ctx).
+		Where("favorited = ?", true).
+		Order("updated_at desc").
+		Find(&docs)
+
+	if result.Error != nil {
+		return nil, fmt.Errorf("list favorited documents: %w", result.Error)
+	}
+
+	return docs, nil
+}
+
 // Delete removes a document record by ID.
 // Returns ErrNotFound if no document exists with that ID.
 func (r *Repository) Delete(ctx context.Context, id string) error {
