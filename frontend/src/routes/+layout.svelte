@@ -3,7 +3,7 @@
 	import '#lib/devlog';
 	import favicon from '#lib/assets/favicon.svg';
 	import Sidebar from '#lib/Sidebar.svelte';
-	import { openDocuments, activeDocumentId, newDocumentTrigger, closeTab } from '#lib/stores';
+	import { openDocuments, activeDocumentId, newDocumentTrigger, closeTab, dirtyDocumentIds, editorStats } from '#lib/stores';
 	import type { LayoutProps } from './$types';
 
 	let { children }: LayoutProps = $props();
@@ -26,14 +26,31 @@
 						>
 							<i class="ph-duotone ph-file-text tab-icon" style="color:var(--ic-doc)"></i>
 							<span class="tab-name">{doc.title || 'Untitled'}</span>
+							{#if $dirtyDocumentIds.has(doc.id)}
+								<span class="tab-dirty" title="Unsaved changes"></span>
+							{/if}
 							<span
 								class="tab-close"
 								class:tab-close--hidden={$activeDocumentId !== doc.id}
 								role="button"
 								tabindex="0"
 								aria-label="Close tab"
-								onclick={(e) => { e.stopPropagation(); closeTab(doc.id); }}
-								onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); closeTab(doc.id); } }}
+								onclick={(e) => {
+									e.stopPropagation();
+									if ($dirtyDocumentIds.has(doc.id)) {
+										if (!confirm(`"${doc.title || 'Untitled'}" has unsaved changes. Close anyway?`)) return;
+									}
+									closeTab(doc.id);
+								}}
+								onkeydown={(e) => {
+									if (e.key === 'Enter' || e.key === ' ') {
+										e.stopPropagation();
+										if ($dirtyDocumentIds.has(doc.id)) {
+											if (!confirm(`"${doc.title || 'Untitled'}" has unsaved changes. Close anyway?`)) return;
+										}
+										closeTab(doc.id);
+									}
+								}}
 							>
 								<i class="ph-duotone ph-x" style="font-size:13px;color:var(--ink-subtle)"></i>
 							</span>
@@ -44,25 +61,13 @@
 						<i class="ph-duotone ph-plus" style="font-size:18px;color:var(--ic-create)"></i>
 					</button>
 				</div>
-				<div class="titlebar-spacer"></div>
-				<div class="window-controls">
-					<button class="wc-btn" type="button" title="Minimize">
-						<i class="ph-duotone ph-minus" style="font-size:14px;color:var(--ink-muted)"></i>
-					</button>
-					<button class="wc-btn" type="button" title="Maximize">
-						<i class="ph-duotone ph-square" style="font-size:14px;color:var(--ink-muted)"></i>
-					</button>
-					<button class="wc-btn wc-btn--close" type="button" title="Close">
-						<i class="ph-duotone ph-x" style="font-size:14px;color:var(--ink-muted)"></i>
-					</button>
-				</div>
 			</div>
 
 			{@render children()}
 
 			<footer class="statusbar">
-				<span class="status-item">Ln 1, Col 1</span>
-				<span class="status-item">0 words</span>
+				<span class="status-item">Ln {$editorStats.line}, Col {$editorStats.col}</span>
+				<span class="status-item">{$editorStats.words} {$editorStats.words === 1 ? 'word' : 'words'}</span>
 				<div class="status-spacer"></div>
 				<span class="status-item">UTF-8</span>
 				<span class="status-item">Markdown</span>
@@ -91,13 +96,9 @@
 	.tab-close:hover { background: var(--wash-selected); }
 	.tab-close--hidden { opacity: 0; }
 	.tab:hover .tab-close--hidden { opacity: 1; }
+	.tab-dirty { width: 6px; height: 6px; border-radius: 50%; background: var(--ic-doc); flex-shrink: 0; }
 	.tab-new { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: none; border-radius: 8px; background: transparent; cursor: pointer; margin-bottom: 2px; transition: background 100ms; }
 	.tab-new:hover { background: var(--wash-hover); }
-	.titlebar-spacer { flex: 1; }
-	.window-controls { display: flex; align-self: flex-start; height: 48px; }
-	.wc-btn { display: flex; align-items: center; justify-content: center; width: 46px; height: 48px; border: none; background: transparent; cursor: pointer; transition: background 100ms; }
-	.wc-btn:hover { background: var(--wash-hover); }
-	.wc-btn--close:hover { background: rgba(196,43,28,0.12); }
 	.statusbar { display: flex; align-items: center; gap: 16px; height: 30px; padding: 0 16px; border-top: 1px solid var(--border); flex-shrink: 0; font-size: 11.5px; color: var(--ink-muted); }
 	.status-item { white-space: nowrap; }
 	.status-spacer { flex: 1; }
