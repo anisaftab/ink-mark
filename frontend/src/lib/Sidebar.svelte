@@ -98,15 +98,15 @@
 
 	<nav class="sb-nav thin-scroll">
 		<div class="sb-quick">
-			<a href="#" class="sb-nav-link">
+			<button type="button" class="sb-nav-link">
 				<i class="ph-duotone ph-clock-counter-clockwise sb-nav-icon" style="color:var(--ic-recent)"></i>
 				<span class="sb-nav-label">Recent</span>
-			</a>
-			<a href="#" class="sb-nav-link">
+			</button>
+			<button type="button" class="sb-nav-link">
 				<i class="ph-duotone ph-push-pin sb-nav-icon" style="color:var(--ic-pin)"></i>
 				<span class="sb-nav-label">Pinned</span>
 				<span class="sb-nav-badge">3</span>
-			</a>
+			</button>
 		</div>
 		<section class="sb-section">
 			<div class="sb-section-header">
@@ -156,25 +156,25 @@
 							<span class="sb-folder-name">research</span>
 						</summary>
 						<div class="sb-folder-children">
-							<a href="#" class="sb-file-link sb-indent">
+							<button type="button" class="sb-file-link sb-indent">
 								<i class="ph-duotone ph-file-text sb-file-icon" style="color:var(--ic-doc)"></i>
 								<span class="sb-file-name">interview-notes</span>
-							</a>
-							<a href="#" class="sb-file-link sb-indent">
+							</button>
+							<button type="button" class="sb-file-link sb-indent">
 								<i class="ph-duotone ph-file-text sb-file-icon" style="color:var(--ic-doc)"></i>
 								<span class="sb-file-name">q3-synthesis</span>
 								<span class="sb-unsaved-dot" title="Unsaved changes"></span>
-							</a>
-							<a href="#" class="sb-file-link sb-indent">
+							</button>
+							<button type="button" class="sb-file-link sb-indent">
 								<i class="ph-duotone ph-file-text sb-file-icon" style="color:var(--ic-doc)"></i>
 								<span class="sb-file-name">personas</span>
-							</a>
+							</button>
 						</div>
 					</details>
-					<a href="#" class="sb-file-link">
+					<button type="button" class="sb-file-link">
 						<i class="ph-duotone ph-file-text sb-file-icon" style="color:var(--ic-doc)"></i>
 						<span class="sb-file-name">README</span>
-					</a>
+					</button>
 				</div>
 			</details>
 			<details class="sb-project">
@@ -185,10 +185,10 @@
 					<span class="sb-project-count">12</span>
 				</summary>
 				<div class="sb-project-children">
-					<a href="#" class="sb-file-link">
+					<button type="button" class="sb-file-link">
 						<i class="ph-duotone ph-file-text sb-file-icon" style="color:var(--ic-doc)"></i>
 						<span class="sb-file-name">drafts-index</span>
-					</a>
+					</button>
 				</div>
 			</details>
 			<details class="sb-project">
@@ -199,10 +199,10 @@
 					<span class="sb-project-count">27</span>
 				</summary>
 				<div class="sb-project-children">
-					<a href="#" class="sb-file-link">
+					<button type="button" class="sb-file-link">
 						<i class="ph-duotone ph-file-text sb-file-icon" style="color:var(--ic-doc)"></i>
 						<span class="sb-file-name">chapter-01</span>
-					</a>
+					</button>
 				</div>
 			</details>
 		</section>
@@ -261,7 +261,7 @@
 	.create-divider { height: 1px; background: var(--border); margin: 5px 0; }
 	.sb-nav { flex: 1; overflow-y: auto; padding: 4px 8px 12px; display: flex; flex-direction: column; }
 	.sb-quick { display: flex; flex-direction: column; gap: 2px; margin-bottom: 16px; }
-	.sb-nav-link { display: flex; align-items: center; gap: 9px; height: 34px; padding: 0 8px; border-radius: 8px; color: var(--ink); text-decoration: none; font-weight: 500; transition: background 100ms; }
+	.sb-nav-link { display: flex; align-items: center; gap: 9px; width: 100%; height: 34px; padding: 0 8px; border: none; border-radius: 8px; background: transparent; color: var(--ink); text-decoration: none; font-family: var(--font); font-weight: 500; cursor: pointer; transition: background 100ms; }
 	.sb-nav-link:hover { background: var(--wash-hover); }
 	.sb-nav-icon { font-size: 20px; flex-shrink: 0; }
 	.sb-nav-label { flex: 1; font-size: 13px; }
@@ -277,7 +277,6 @@
 	.sb-file-link--active { background: var(--wash-selected); font-weight: 600; }
 	.sb-file-icon { font-size: 18px; flex-shrink: 0; }
 	.sb-file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; }
-	.sb-pin-icon { font-size: 14px; flex-shrink: 0; }
 	.sb-unsaved-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ic-doc); flex-shrink: 0; }
 	.sb-indent { padding-left: 10px; }
 	.sb-empty { font-size: 12px; color: var(--ink-subtle); font-family: var(--font); padding: 4px 8px; margin: 0; }
