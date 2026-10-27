@@ -13,6 +13,7 @@ type Document struct {
 	ID        string    `gorm:"type:text;primaryKey"`
 	Title     string    `gorm:"type:text;not null;default:'Untitled'"`
 	FilePath  string    `gorm:"type:text;not null"`
+	ProjectID *string   `gorm:"type:text;index"`           // nil when the document is standalone
 	CreatedAt time.Time `gorm:"not null;autoCreateTime"`
 	UpdatedAt time.Time `gorm:"not null;autoUpdateTime"`
 }
@@ -33,6 +34,7 @@ func (d *Document) BeforeCreate(_ *gorm.DB) error {
 
 // Input holds the fields for creating or updating a document.
 type Input struct {
-	Title    string
-	FilePath string
+	Title     string
+	FilePath  string
+	ProjectID *string // nil leaves the project association unchanged on update
 }
