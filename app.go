@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -157,7 +158,86 @@ func (a *App) SaveDocument(id string, title string, content string) error {
 	return nil
 }
 
-// LoadDocument reads a document's content from disk.
+// OpenDocument opens a file-picker dialog so the user can select an existing
+// .md file. If the file is already tracked in the database its existing record
+// is returned; otherwise a new record is created. Either way the file's content
+// is read from disk and returned in the DTO.
+func (a *App) OpenDocument() (DocumentDTO, error) {
+	if a.documents == nil {
+		return DocumentDTO{}, fmt.Errorf("database not ready")
+	}
+
+	filePath, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
+		Title:   "Open Document",
+		Filters: []runtime.FileFilter{{DisplayName: "Markdown (*.md)", Pattern: "*.md"}},
+	})
+	if err != nil {
+		return DocumentDTO{}, fmt.Errorf("open dialog: %w", err)
+	}
+	if filePath == "" {
+		// User cancelled — return empty DTO with no error.
+		return DocumentDTO{}, nil
+	}
+
+	// Re-use an existing record if this file is already known.
+	doc, err := a.documents.GetByFilePath(a.ctx, filePath)
+	if err != nil {
+		if !errors.Is(err, document.ErrNotFound) {
+			return DocumentDTO{}, fmt.Errorf("look up document by path: %w", err)
+		}
+
+		// File not yet in the database — register it now.
+		title := filepath.Base(filePath)
+		if ext := filepath.Ext(title); ext != "" {
+			title = title[:len(title)-len(ext)]
+		}
+
+		doc, err = a.documents.Create(a.ctx, document.Input{
+			Title:    title,
+			FilePath: filePath,
+		})
+		if err != nil {
+			return DocumentDTO{}, fmt.Errorf("create document record: %w", err)
+		}
+	}
+
+	data, err := os.ReadFile(doc.FilePath)
+	if err != nil {
+		return DocumentDTO{}, fmt.Errorf("read file %q: %w", doc.FilePath, err)
+	}
+
+	return DocumentDTO{
+		ID:       doc.ID,
+		Title:    doc.Title,
+		FilePath: doc.FilePath,
+		Content:  string(data),
+	}, nil
+}
+
+// ListDocuments returns all tracked documents ordered by most recently updated.
+func (a *App) ListDocuments() ([]DocumentDTO, error) {
+	if a.documents == nil {
+		return nil, fmt.Errorf("database not ready")
+	}
+
+	docs, err := a.documents.List(a.ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list documents: %w", err)
+	}
+
+	dtos := make([]DocumentDTO, len(docs))
+	for i, doc := range docs {
+		dtos[i] = DocumentDTO{
+			ID:       doc.ID,
+			Title:    doc.Title,
+			FilePath: doc.FilePath,
+			Content:  "", // content is loaded on demand via LoadDocument
+		}
+	}
+
+	return dtos, nil
+}
+
 func (a *App) LoadDocument(id string) (DocumentDTO, error) {
 	doc, err := a.documents.GetByID(a.ctx, id)
 	if err != nil {
