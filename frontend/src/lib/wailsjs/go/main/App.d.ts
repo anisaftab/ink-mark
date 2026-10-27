@@ -6,8 +6,6 @@ export function AddDocumentToProject(arg1:string,arg2:string):Promise<void>;
 
 export function GetProjectByName(arg1:string):Promise<main.ProjectDTO>;
 
-export function GetProjectByName(arg1:string):Promise<main.ProjectDTO>;
-
 export function GetProjectDocuments(arg1:string):Promise<Array<main.DocumentDTO>>;
 
 export function ListDocuments():Promise<Array<main.DocumentDTO>>;

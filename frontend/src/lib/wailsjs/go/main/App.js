@@ -10,10 +10,6 @@ export function GetProjectByName(arg1) {
   return window['go']['main']['App']['GetProjectByName'](arg1);
 }
 
-export function GetProjectByName(arg1) {
-  return window['go']['main']['App']['GetProjectByName'](arg1);
-}
-
 export function GetProjectDocuments(arg1) {
   return window['go']['main']['App']['GetProjectDocuments'](arg1);
 }
