@@ -44,7 +44,7 @@ function devLogPlugin(): Plugin {
 			// @ts-expect-error — Vite's logger type doesn't expose a setter but the
 			// object is writable; we patch in place without breaking the reference.
 			server.config.logger.warn = wrap('warn', original.warn);
-			// @ts-expect-error
+			// @ts-expect-error - path error type as well
 			server.config.logger.error = wrap('error', original.error);
 		}
 	};
