@@ -9,8 +9,67 @@ html, body {
   height: 100%;
   margin: 0;
   padding: 0;
-  background: #F3F3F3;
+  background: #f7f6f3;
 }
 
 body { -webkit-font-smoothing: antialiased; }
+
+/* ── Design tokens ──────────────────────────────────────────── */
+:root {
+  /* Surfaces */
+  --surface-base:    #f7f6f3;
+  --surface-panel:   #fdfcfa;
+  --surface-overlay: rgba(253, 252, 250, 0.97);
+
+  /* Ink */
+  --ink:        #1c1917;
+  --ink-muted:  #57534e;
+  --ink-subtle: #a8a29e;
+
+  /* Accent — ink-mark blue */
+  --accent:       #0F6CBD;
+  --accent-hover: #0D5EA8;
+  --accent-muted: rgba(15, 108, 189, 0.10);
+  --accent-border: rgba(15, 108, 189, 0.28);
+
+  /* Borders */
+  --border:       rgba(28, 25, 23, 0.08);
+  --border-strong: rgba(28, 25, 23, 0.15);
+
+  /* Interaction washes */
+  --wash-hover:    rgba(28, 25, 23, 0.045);
+  --wash-selected: rgba(28, 25, 23, 0.08);
+
+  /* Icon accent palette */
+  --ic-doc:      #b97316;
+  --ic-project:  #4f8a68;
+  --ic-settings: #5b6b82;
+  --ic-create:   #c0532b;
+  --ic-search:   #5a62b5;
+  --ic-recent:   #2f7fb5;
+  --ic-pin:      #c89512;
+  --ic-outline:  #7c5cc4;
+  --ic-secure:   #2f8f5b;
+
+  /* Typography */
+  --font: 'Plus Jakarta Sans', 'Segoe UI Variable', system-ui, sans-serif;
+}
+
+/* ── Glass utilities ────────────────────────────────────────── */
+.glass-sidebar {
+  background: rgba(247, 246, 243, 0.98);
+  backdrop-filter: blur(48px) saturate(160%);
+  -webkit-backdrop-filter: blur(48px) saturate(160%);
+}
+
+.glass-content {
+  background: rgba(253, 252, 250, 0.99);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+/* ── Thin scrollbar ─────────────────────────────────────────── */
+.thin-scroll::-webkit-scrollbar               { width: 6px; height: 6px; }
+.thin-scroll::-webkit-scrollbar-thumb         { background: var(--border-strong); border-radius: 8px; border: 1px solid transparent; background-clip: content-box; }
+.thin-scroll::-webkit-scrollbar-track        { background: transparent; }
 
