@@ -134,6 +134,59 @@ func TestRepository_GetByID(t *testing.T) {
 	}
 }
 
+func TestRepository_GetByName(t *testing.T) {
+	db := setupTestDB(t)
+	repo := project.NewRepository(db)
+	ctx := context.Background()
+
+	created := seedProject(t, repo, "Atlas Handbook", "/projects/atlas")
+
+	tests := []struct {
+		name    string
+		query   string
+		want    func(t *testing.T, p project.Project)
+		wantErr error
+	}{
+		{
+			name:  "success — exact match",
+			query: "Atlas Handbook",
+			want: func(t *testing.T, p project.Project) {
+				assert.Equal(t, created.ID, p.ID)
+				assert.Equal(t, "Atlas Handbook", p.Name)
+			},
+		},
+		{
+			name:  "success — case-insensitive match",
+			query: "atlas handbook",
+			want: func(t *testing.T, p project.Project) {
+				assert.Equal(t, created.ID, p.ID)
+			},
+		},
+		{
+			name:    "failure — non-existent name",
+			query:   "Ghost Project",
+			wantErr: project.ErrNotFound,
+		},
+		{
+			name:    "failure — empty name",
+			query:   "",
+			wantErr: project.ErrNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := repo.GetByName(ctx, tt.query)
+			if tt.wantErr != nil {
+				require.ErrorIs(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			tt.want(t, p)
+		})
+	}
+}
+
 func TestRepository_List(t *testing.T) {
 	t.Run("success — empty database returns empty slice", func(t *testing.T) {
 		projects, err := project.NewRepository(setupTestDB(t)).List(context.Background())

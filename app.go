@@ -379,6 +379,44 @@ func (a *App) GetProjectDocuments(projectID string) ([]DocumentDTO, error) {
 	return dtos, nil
 }
 
+// GetProjectByName returns the project whose name matches exactly (case-insensitive),
+// including its document metadata. Returns an empty DTO with no error if not found.
+func (a *App) GetProjectByName(name string) (ProjectDTO, error) {
+	if a.projects == nil {
+		return ProjectDTO{}, fmt.Errorf("database not ready")
+	}
+
+	p, err := a.projects.GetByName(a.ctx, name)
+	if err != nil {
+		if errors.Is(err, project.ErrNotFound) {
+			return ProjectDTO{}, nil
+		}
+		return ProjectDTO{}, fmt.Errorf("get project by name: %w", err)
+	}
+
+	docs, err := a.projects.ListDocuments(a.ctx, p.ID)
+	if err != nil {
+		return ProjectDTO{}, fmt.Errorf("list documents for project: %w", err)
+	}
+
+	docDTOs := make([]DocumentDTO, len(docs))
+	for i, doc := range docs {
+		docDTOs[i] = DocumentDTO{
+			ID:       doc.ID,
+			Title:    doc.Title,
+			FilePath: doc.FilePath,
+			Content:  "",
+		}
+	}
+
+	return ProjectDTO{
+		ID:         p.ID,
+		Name:       p.Name,
+		FolderPath: p.FolderPath,
+		Documents:  docDTOs,
+	}, nil
+}
+
 // AddDocumentToProject assigns an existing document to a project.
 func (a *App) AddDocumentToProject(projectID, documentID string) error {
 	if a.projects == nil {

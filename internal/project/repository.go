@@ -60,6 +60,24 @@ func (r *Repository) GetByID(ctx context.Context, id string) (Project, error) {
 	return p, nil
 }
 
+// GetByName returns the first project whose name matches exactly (case-insensitive).
+// Returns ErrNotFound if no project exists with that name.
+func (r *Repository) GetByName(ctx context.Context, name string) (Project, error) {
+	var p Project
+
+	result := r.db.WithContext(ctx).
+		Where("lower(name) = lower(?)", name).
+		First(&p)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return Project{}, ErrNotFound
+		}
+		return Project{}, fmt.Errorf("get project by name %q: %w", name, result.Error)
+	}
+
+	return p, nil
+}
+
 // List returns all projects ordered by most recently updated first.
 func (r *Repository) List(ctx context.Context) ([]Project, error) {
 	var projects []Project

@@ -6,6 +6,14 @@ export function AddDocumentToProject(arg1, arg2) {
   return window['go']['main']['App']['AddDocumentToProject'](arg1, arg2);
 }
 
+export function GetProjectByName(arg1) {
+  return window['go']['main']['App']['GetProjectByName'](arg1);
+}
+
+export function GetProjectByName(arg1) {
+  return window['go']['main']['App']['GetProjectByName'](arg1);
+}
+
 export function GetProjectDocuments(arg1) {
   return window['go']['main']['App']['GetProjectDocuments'](arg1);
 }
