@@ -11,6 +11,7 @@ import (
 	"ink-mark/internal/db"
 	"ink-mark/internal/document"
 	"ink-mark/internal/logging"
+	"ink-mark/internal/project"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"gorm.io/gorm"
@@ -43,6 +44,7 @@ type App struct {
 	ctx        context.Context
 	db         *gorm.DB
 	documents  *document.Repository
+	projects   *project.Repository
 	consoleLog *os.File // non-nil only when INKMARK_DEV_LOGS=1
 }
 
@@ -77,6 +79,7 @@ func (a *App) startup(ctx context.Context) {
 
 	a.db = gormDB
 	a.documents = document.NewRepository(gormDB)
+	a.projects = project.NewRepository(gormDB)
 }
 
 // DocumentDTO is the data transfer object returned to the frontend.
@@ -269,5 +272,131 @@ func (a *App) LogBrowserEvent(level, message, stack string) {
 		msg = message + "\n" + stack
 	}
 	logging.WriteLine(a.consoleLog, level, "browser", msg)
+}
+
+// ProjectDTO is the data transfer object for a project returned to the frontend.
+type ProjectDTO struct {
+	ID         string        `json:"id"`
+	Name       string        `json:"name"`
+	FolderPath string        `json:"folderPath"`
+	Documents  []DocumentDTO `json:"documents"`
+}
+
+// NewProject opens a folder-picker dialog, creates a new project record in the
+// database rooted at the chosen folder, and returns the empty project DTO.
+func (a *App) NewProject() (ProjectDTO, error) {
+	if a.projects == nil {
+		return ProjectDTO{}, fmt.Errorf("database not ready")
+	}
+
+	folderPath, err := runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{
+		Title: "Choose Project Folder",
+	})
+	if err != nil {
+		return ProjectDTO{}, fmt.Errorf("folder dialog: %w", err)
+	}
+	if folderPath == "" {
+		return ProjectDTO{}, nil // user cancelled
+	}
+
+	name := filepath.Base(folderPath)
+
+	p, err := a.projects.Create(a.ctx, project.Input{
+		Name:       name,
+		FolderPath: folderPath,
+	})
+	if err != nil {
+		return ProjectDTO{}, fmt.Errorf("create project: %w", err)
+	}
+
+	return ProjectDTO{
+		ID:         p.ID,
+		Name:       p.Name,
+		FolderPath: p.FolderPath,
+		Documents:  []DocumentDTO{},
+	}, nil
+}
+
+// ListProjects returns all projects with their associated document metadata
+// (content is not loaded — use LoadDocument for that).
+func (a *App) ListProjects() ([]ProjectDTO, error) {
+	if a.projects == nil {
+		return nil, fmt.Errorf("database not ready")
+	}
+
+	projects, err := a.projects.List(a.ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list projects: %w", err)
+	}
+
+	dtos := make([]ProjectDTO, len(projects))
+	for i, p := range projects {
+		docs, err := a.projects.ListDocuments(a.ctx, p.ID)
+		if err != nil {
+			return nil, fmt.Errorf("list documents for project %s: %w", p.ID, err)
+		}
+		docDTOs := make([]DocumentDTO, len(docs))
+		for j, doc := range docs {
+			docDTOs[j] = DocumentDTO{
+				ID:       doc.ID,
+				Title:    doc.Title,
+				FilePath: doc.FilePath,
+				Content:  "",
+			}
+		}
+		dtos[i] = ProjectDTO{
+			ID:         p.ID,
+			Name:       p.Name,
+			FolderPath: p.FolderPath,
+			Documents:  docDTOs,
+		}
+	}
+
+	return dtos, nil
+}
+
+// GetProjectDocuments returns all document metadata for a single project.
+func (a *App) GetProjectDocuments(projectID string) ([]DocumentDTO, error) {
+	if a.projects == nil {
+		return nil, fmt.Errorf("database not ready")
+	}
+
+	docs, err := a.projects.ListDocuments(a.ctx, projectID)
+	if err != nil {
+		return nil, fmt.Errorf("get project documents: %w", err)
+	}
+
+	dtos := make([]DocumentDTO, len(docs))
+	for i, doc := range docs {
+		dtos[i] = DocumentDTO{
+			ID:       doc.ID,
+			Title:    doc.Title,
+			FilePath: doc.FilePath,
+			Content:  "",
+		}
+	}
+
+	return dtos, nil
+}
+
+// AddDocumentToProject assigns an existing document to a project.
+func (a *App) AddDocumentToProject(projectID, documentID string) error {
+	if a.projects == nil {
+		return fmt.Errorf("database not ready")
+	}
+
+	// Verify the project exists before attempting the assignment.
+	if _, err := a.projects.GetByID(a.ctx, projectID); err != nil {
+		if errors.Is(err, project.ErrNotFound) {
+			return fmt.Errorf("project not found")
+		}
+		return fmt.Errorf("get project: %w", err)
+	}
+
+	if err := a.projects.AddDocument(a.ctx, projectID, documentID); err != nil {
+		return fmt.Errorf("add document to project: %w", err)
+	}
+
+	return nil
 }
 
