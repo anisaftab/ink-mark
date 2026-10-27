@@ -2,151 +2,106 @@
 	import './layout.css';
 	import '#lib/devlog';
 	import favicon from '#lib/assets/favicon.svg';
-	import { newDocumentTrigger } from '#lib/stores';
+	import Sidebar from '#lib/Sidebar.svelte';
+	import { openDocuments, activeDocumentId, newDocumentTrigger, closeTab } from '#lib/stores';
 	import type { LayoutProps } from './$types';
 
 	let { children }: LayoutProps = $props();
 </script>
 
-<svelte:head>
-	<link rel="icon" href={favicon} />
-</svelte:head>
+<svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
-<!-- Opaque backdrop — overrides Wails WebviewIsTransparent -->
 <div class="backdrop">
 	<div class="shell">
-		<aside class="sidebar">
-			<div class="sidebar-header">
-				<span class="app-icon">🖊️</span>
-				<span class="app-name">ink-mark</span>
+		<Sidebar />
+		<main class="content glass-content">
+			<div class="titlebar">
+				<div class="tabs">
+					{#each $openDocuments as doc (doc.id)}
+						<button
+							class="tab"
+							class:tab--active={$activeDocumentId === doc.id}
+							type="button"
+							onclick={() => activeDocumentId.set(doc.id)}
+						>
+							<i class="ph-duotone ph-file-text tab-icon" style="color:var(--ic-doc)"></i>
+							<span class="tab-name">{doc.title || 'Untitled'}</span>
+							<span
+								class="tab-close"
+								class:tab-close--hidden={$activeDocumentId !== doc.id}
+								role="button"
+								tabindex="0"
+								aria-label="Close tab"
+								onclick={(e) => { e.stopPropagation(); closeTab(doc.id); }}
+								onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); closeTab(doc.id); } }}
+							>
+								<i class="ph-duotone ph-x" style="font-size:13px;color:var(--ink-subtle)"></i>
+							</span>
+						</button>
+					{/each}
+					<button class="tab-new" type="button" title="New tab"
+						onclick={() => newDocumentTrigger.update(n => n + 1)}>
+						<i class="ph-duotone ph-plus" style="font-size:18px;color:var(--ic-create)"></i>
+					</button>
+				</div>
+				<div class="titlebar-spacer"></div>
+				<div class="window-controls">
+					<button class="wc-btn" type="button" title="Minimize">
+						<i class="ph-duotone ph-minus" style="font-size:14px;color:var(--ink-muted)"></i>
+					</button>
+					<button class="wc-btn" type="button" title="Maximize">
+						<i class="ph-duotone ph-square" style="font-size:14px;color:var(--ink-muted)"></i>
+					</button>
+					<button class="wc-btn wc-btn--close" type="button" title="Close">
+						<i class="ph-duotone ph-x" style="font-size:14px;color:var(--ink-muted)"></i>
+					</button>
+				</div>
 			</div>
 
-			<nav class="nav">
-				<button class="nav-item nav-item--active" type="button"
-					onclick={() => newDocumentTrigger.update(n => n + 1)}>
-					<i class="ph-duotone ph-note-pencil nav-icon"></i>
-					<span>New Document</span>
-				</button>
-				<button class="nav-item" type="button">
-					<i class="ph-duotone ph-folder-open nav-icon"></i>
-					<span>All Documents</span>
-				</button>
-			</nav>
-
-			<div class="sidebar-spacer"></div>
-
-			<nav class="nav">
-				<button class="nav-item" type="button">
-					<i class="ph-duotone ph-gear-six nav-icon"></i>
-					<span>Settings</span>
-				</button>
-			</nav>
-		</aside>
-
-		<main class="content">
 			{@render children()}
+
+			<footer class="statusbar">
+				<span class="status-item">Ln 1, Col 1</span>
+				<span class="status-item">0 words</span>
+				<div class="status-spacer"></div>
+				<span class="status-item">UTF-8</span>
+				<span class="status-item">Markdown</span>
+				<span class="status-item status-item--secure">
+					<i class="ph-duotone ph-shield-check" style="font-size:14px;color:var(--ic-secure)"></i>
+					Stored locally
+				</span>
+			</footer>
 		</main>
 	</div>
 </div>
 
 <style>
-	/* Opaque full-bleed backdrop */
-	.backdrop {
-		position: fixed;
-		inset: 0;
-		background: #F3F3F3;
-	}
-
-	.shell {
-		position: relative;
-		display: grid;
-		grid-template-columns: 240px 1fr;
-		height: 100vh;
-		font-family: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
-		color: #1A1A1A;
-	}
-
-	/* ── Sidebar ─────────────────────────────────────────── */
-	.sidebar {
-		display: flex;
-		flex-direction: column;
-		height: 100%;
-		background: rgba(243, 243, 243, 0.96);
-		border-right: 1px solid #E5E5E5;
-		padding: 12px 8px;
-	}
-
-	.sidebar-header {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 12px 12px 20px;
-	}
-
-	.app-icon { font-size: 18px; line-height: 1; }
-
-	.app-name {
-		font-size: 14px;
-		font-weight: 600;
-		color: #1A1A1A;
-		letter-spacing: -0.01em;
-	}
-
-	.nav { display: flex; flex-direction: column; gap: 1px; }
-	.sidebar-spacer { flex: 1; }
-
-	.nav-item {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		width: 100%;
-		padding: 7px 12px;
-		border: none;
-		border-radius: 6px;
-		background: transparent;
-		color: #606060;
-		font-family: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
-		font-size: 13px;
-		font-weight: 400;
-		cursor: pointer;
-		text-align: left;
-		outline: none;
-		position: relative;
-		transition: background 120ms ease, color 120ms ease;
-	}
-
-	.nav-item:hover { background: #F0F0F0; color: #1A1A1A; }
-	.nav-item:active { background: #E7E7E7; transform: scale(0.99); }
-	.nav-item:focus-visible { box-shadow: 0 0 0 2px #005FB8; }
-
-	.nav-item--active {
-		background: rgba(15, 108, 189, 0.10);
-		color: #0F6CBD;
-		font-weight: 600;
-	}
-
-	.nav-item--active::before {
-		content: '';
-		position: absolute;
-		left: 0;
-		top: 50%;
-		transform: translateY(-50%);
-		width: 3px;
-		height: 16px;
-		background: #0F6CBD;
-		border-radius: 0 4px 4px 0;
-	}
-
-	.nav-icon { font-size: 16px; flex-shrink: 0; color: inherit; }
-
-	/* ── Content ─────────────────────────────────────────── */
-	.content {
-		display: flex;
-		flex-direction: column;
-		height: 100%;
-		background: #FFFFFF;
-		overflow: hidden;
-	}
+	.backdrop { position: fixed; inset: 0; background: var(--surface-base); font-family: var(--font); color: var(--ink); font-size: 13px; }
+	.shell { display: grid; grid-template-columns: 272px 1fr; height: 100vh; overflow: hidden; }
+	.content { display: flex; flex-direction: column; height: 100%; overflow: hidden; min-width: 0; }
+	.titlebar { display: flex; align-items: flex-end; height: 48px; flex-shrink: 0; border-bottom: 1px solid var(--border); padding-left: 8px; }
+	.tabs { display: flex; align-items: flex-end; gap: 2px; overflow-x: auto; min-width: 0; }
+	.tabs::-webkit-scrollbar { display: none; }
+	.tab { display: flex; align-items: center; gap: 7px; height: 36px; padding: 0 10px; border: none; border-radius: 8px 8px 0 0; background: transparent; color: var(--ink-muted); font-family: var(--font); font-size: 12.5px; cursor: pointer; transition: background 100ms, color 100ms; white-space: nowrap; }
+	.tab:hover { background: var(--wash-hover); color: var(--ink); }
+	.tab--active { background: var(--surface-base); color: var(--ink); font-weight: 600; border: 1px solid var(--border); border-bottom: none; margin-bottom: -1px; }
+	.tab-icon { font-size: 15px; flex-shrink: 0; }
+	.tab-name { max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
+	.tab-close { display: flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 4px; flex-shrink: 0; transition: background 100ms; }
+	.tab-close:hover { background: var(--wash-selected); }
+	.tab-close--hidden { opacity: 0; }
+	.tab:hover .tab-close--hidden { opacity: 1; }
+	.tab-new { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: none; border-radius: 8px; background: transparent; cursor: pointer; margin-bottom: 2px; transition: background 100ms; }
+	.tab-new:hover { background: var(--wash-hover); }
+	.titlebar-spacer { flex: 1; }
+	.window-controls { display: flex; align-self: flex-start; height: 48px; }
+	.wc-btn { display: flex; align-items: center; justify-content: center; width: 46px; height: 48px; border: none; background: transparent; cursor: pointer; transition: background 100ms; }
+	.wc-btn:hover { background: var(--wash-hover); }
+	.wc-btn--close:hover { background: rgba(196,43,28,0.12); }
+	.statusbar { display: flex; align-items: center; gap: 16px; height: 30px; padding: 0 16px; border-top: 1px solid var(--border); flex-shrink: 0; font-size: 11.5px; color: var(--ink-muted); }
+	.status-item { white-space: nowrap; }
+	.status-spacer { flex: 1; }
+	.status-item--secure { display: flex; align-items: center; gap: 5px; }
 </style>
 
-
+﻿
